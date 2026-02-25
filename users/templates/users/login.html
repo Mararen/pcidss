@@ -1,0 +1,50 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Login | PCI Cert Pro</title>
+    <link rel="stylesheet" href="{% static 'users/css/login.css' %}">
+</head>
+<body>
+
+    <!-- Banner -->
+    <div class="banner">
+        <img src="{% static 'users/img/banner.jpg' %}">
+    </div>
+
+    <!-- Login Card -->
+    <div class="login-container">
+        <div class="login-card">
+            <form method="post">
+				{% if error %}
+					<p style="color:red;
+					text-align:center;">{{ error }}</p>
+				{ % endif % }
+				
+                {% csrf_token %}
+
+                <label>Nombre de usuario</label>
+                <input type="text" name="username" required>
+
+                <label>Contraseña</label>
+                <input type="password" name="password" required>
+
+                <div class="options">
+                    <label class="remember">
+                        <input type="checkbox" name="remember">
+                        Recordarme
+                    </label>
+                </div>
+
+                <button type="submit">Iniciar Sesión</button>
+
+                <div class="forgot">
+                    <a href="#">¿Olvidaste tu contraseña?</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+</body>
+</html>

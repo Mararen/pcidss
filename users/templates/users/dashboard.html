@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Dashboard | PCI Cert Pro</title>
+</head>
+<body>
+
+<h2>Dashboard</h2>
+
+<p>Bienvenido: {{ request.user.username }}</p>
+
+{% if request.user.is_superuser %}
+    <p>Acceso: Administrador</p>
+{% else %}
+    <p>Acceso: Usuario</p>
+{% endif %}
+
+<a href="{% url 'logout' %}">Cerrar sesión</a>
+
+</body>
+</html>
