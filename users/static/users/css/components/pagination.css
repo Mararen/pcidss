@@ -1,0 +1,27 @@
+.pagination{
+display:flex;
+justify-content:space-between;
+align-items:center;
+margin-top:16px;
+font-size:13px;
+color:var(--text-muted);
+}
+
+.pagination-controls{
+display:flex;
+gap:6px;
+}
+
+.pagination-controls a,
+.pagination-controls span{
+padding:5px 12px;
+border-radius:var(--radius-sm);
+border:1px solid var(--border-light);
+background:white;
+text-decoration:none;
+}
+
+.pagination-controls span.current{
+background:var(--primary);
+color:white;
+}

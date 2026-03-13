@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <title>Login | PCI Cert Pro</title>
-    <link rel="stylesheet" href="{% static 'users/css/login.css' %}">
+    <link rel="stylesheet" href="{% static 'users/css/main.css' %}">
 </head>
 <body>
 
@@ -20,7 +20,7 @@
 				{% if error %}
 					<p style="color:red;
 					text-align:center;">{{ error }}</p>
-				{ % endif % }
+				{% endif %}
 				
                 {% csrf_token %}
 

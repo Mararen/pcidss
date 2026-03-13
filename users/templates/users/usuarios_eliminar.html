@@ -3,7 +3,7 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Dashboard | PCI Cert Pro</title>
+    <title>Eliminar Usuario | PCI Cert Pro</title>
     <link rel="stylesheet" href="{% static 'users/css/main.css' %}">
 </head>
 <body>
@@ -18,11 +18,11 @@
             <p>Administrador Global</p>
         </div>
         <nav class="menu">
-            <a href="{% url 'dashboard' %}"  class="active">
+            <a href="{% url 'dashboard' %}">
                 <i data-feather="grid"></i>
                 Dashboard
             </a>
-            <a href="{% url 'usuarios_lista' %}">
+            <a href="{% url 'usuarios_lista' %}" class="active">
                 <i data-feather="users"></i>
                 Usuarios
             </a>
@@ -56,48 +56,62 @@
     <!-- MAIN -->
     <main class="main-content">
 
-        <!-- TOPBAR -->
-<header class="topbar">
+    <!-- TOPBAR -->
+    <header class="topbar">
 
-    <nav class="topbar-nav">
-        <a href="{% url 'dashboard' %}" class="active">Dashboard</a>
-        <a href="#">Catálogos</a>
-        <a href="#">Configuración</a>
-        <a href="#">Ayuda</a>
-    </nav>
+        <nav class="topbar-nav">
+            <a href="{% url 'dashboard' %}">Dashboard</a>
+            <a href="#">Catálogos</a>
+            <a href="#">Configuración</a>
+            <a href="#">Ayuda</a>
+        </nav>
 
-    <div class="topbar-right">
+        <div class="topbar-right">
 
-        <div class="topbar-search">
-            <i data-feather="search"></i>
-            <input type="text" placeholder="Buscar...">
+            <div class="topbar-search">
+                <i data-feather="search"></i>
+                <input type="text" placeholder="Buscar...">
+            </div>
+
+            <div class="topbar-lang">
+                Eng ▾
+            </div>
+
         </div>
 
-        <div class="topbar-lang">
-            Eng ▾
-        </div>
-
-    </div>
-
-</header>
+    </header>
 
         <!-- CONTENT -->
         <section class="content">
+
+            <!-- PAGE HEADER -->
             <div class="page-header">
                 <div class="page-header-text">
-                    <h1>¡Bienvenido a PCI Cert Pro!</h1>
-                    <p>Tu plataforma integral para la autocertificación en cumplimiento con el estándar PCI DSS v4.0.1.<br>
-                    Aquí podrás gestionar todo el proceso de certificación de manera segura, trazable y automatizada,
-                    desde la creación de tu entidad hasta la emisión de tu constancia de cumplimiento.</p>
+                    <h1>Eliminar Usuario</h1>
+                    <p>Esta acción es permanente y no se puede deshacer.</p>
                 </div>
-                <div class="page-header-logo">
-                    <img src="{% static 'users/img/logo.png' %}" alt="PCI Cert Pro">
+                <div class="page-header-pcilogo-min">
+                    <img src="{% static 'users/img/pcilogo.png' %}" alt="PCI Cert Pro">
                 </div>
             </div>
+
+            <!-- CONFIRM CARD -->
+            <div class="form-card">
+                <p style="font-size:14px; color:var(--text-muted); margin-bottom:24px;">
+                    Estás a punto de eliminar al usuario <strong style="color:var(--text-dark);">{{ object.username }}</strong>.
+                    ¿Deseas continuar?
+                </p>
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="form-actions">
+                        <a href="{% url 'usuarios_lista' %}" class="btn-secondary">Cancelar</a>
+                        <button type="submit" class="btn-danger">Confirmar eliminación</button>
+                    </div>
+                </form>
+            </div>
+
         </section>
-
     </main>
-
 </div>
 
 

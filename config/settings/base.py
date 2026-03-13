@@ -1,6 +1,9 @@
+import os
+from dotenv import load_dotenv
 from pathlib import Path
 
-BASE_DIR = Path(__file__).resolve().parent.parent
+BASE_DIR = Path(__file__).resolve().parent.parent.parent
+load_dotenv(BASE_DIR / ".env")
 
 
 # =========================
@@ -11,7 +14,7 @@ SECRET_KEY = 'django-insecure-for1de=@tawv+vyw#*(43v@vul=nz9$mxdt1wuji1q36j5yb'
 
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = os.environ.get("DJANGO_ALLOWED_HOSTS", "").split(",")
 
 
 # =========================
@@ -46,12 +49,12 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
-
 # =========================
-# URLS
+# WSGI
 # =========================
 
 ROOT_URLCONF = 'config.urls'
+WSGI_APPLICATION = 'config.wsgi.application'
 
 
 # =========================
@@ -74,26 +77,19 @@ TEMPLATES = [
     },
 ]
 
-
-# =========================
-# WSGI
-# =========================
-
-WSGI_APPLICATION = 'config.wsgi.application'
-
-
 # =========================
 # DATABASE (PostgreSQL)
 # =========================
 
-DATABASES = {
+
+DATABASES = { 
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'pcidb',
-        'USER': 'django_user',
-        'PASSWORD': 'postgresuser123',
-        'HOST': 'localhost',
-        'PORT': '5432',
+        'NAME': os.environ.get("DB_NAME"),
+        'USER': os.environ.get("DB_USER"),
+        'PASSWORD': os.environ.get("DB_PASSWORD"),
+        'HOST': os.environ.get("DB_HOST"),
+        'PORT': os.environ.get("DB_PORT", "5432"),
     }
 }
 
@@ -125,7 +121,7 @@ PASSWORD_VALIDATORS = [
 # INTERNATIONALIZATION
 # =========================
 
-LANGUAGE_CODE = 'es-mx'   # Mejor para tu sistema
+LANGUAGE_CODE = 'es-mx'   
 
 TIME_ZONE = 'America/Mexico_City'
 
@@ -138,6 +134,7 @@ USE_TZ = True
 # =========================
 
 STATIC_URL = '/static/'
+STATIC_ROOT = BASE_DIR / "staticfiles"
 
 
 # =========================

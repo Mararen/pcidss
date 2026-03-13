@@ -1,0 +1,49 @@
+.saq-content {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    padding: 32px 36px;
+}
+
+.saq-body {
+    display: grid;
+    grid-template-columns: 420px 1fr;
+    gap: 24px;
+}
+
+/* panel */
+
+.saq-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    overflow-y: auto;
+}
+
+/* section */
+
+.saq-section {
+    background: white;
+    border-radius: var(--radius);
+    overflow: hidden;
+    box-shadow: var(--shadow-sm);
+}
+
+.saq-section-header {
+    display: flex;
+    justify-content: space-between;
+    padding: 14px 18px;
+    background: var(--primary-light);
+    border: none;
+    cursor: pointer;
+}
+
+/* editor */
+
+.saq-editor {
+    display: flex;
+    flex-direction: column;
+    background: white;
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-sm);
+}

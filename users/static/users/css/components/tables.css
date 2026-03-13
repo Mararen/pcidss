@@ -1,0 +1,18 @@
+.modern-table{
+width:100%;
+border-collapse:collapse;
+background:white;
+border-radius:var(--radius);
+overflow:hidden;
+box-shadow:var(--shadow-sm);
+font-size:13.5px;
+}
+
+.modern-table td{
+padding:13px 16px;
+border-bottom:1px solid var(--border-light);
+}
+
+.modern-table tbody tr:hover{
+background:#f6fffe;
+}

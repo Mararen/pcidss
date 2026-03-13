@@ -15,7 +15,7 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 import os
-print("URLs cargadas desde:", os.path.abspath(__file__)) #Eliminar en producción
+print("URLs cargadas desde:", os.path.abspath(__file__))  # eliminar en producción
 
 from django.contrib import admin
 from django.urls import path, include

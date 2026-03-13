@@ -1,0 +1,35 @@
+:root {
+
+--primary: #2a8f8a;
+--primary-dark: #216863;
+--primary-light: #e8f7f6;
+
+--sidebar-bg: #054857;
+--sidebar-hover: #9ae8ca;
+--sidebar-active: #0cb0ff;
+
+--topbar-bg: #4faaa6;
+
+--bg-light: #f4f6f8;
+--white: #ffffff;
+
+--text-dark: #1a2b2b;
+--text-muted: #6c757d;
+
+--border-light: #e6eef0;
+
+--danger: #dc3545;
+--danger-light: #fde2e5;
+
+--success: #0c6b58;
+--success-bg: #d1f7ec;
+
+--shadow-sm: 0 2px 8px rgba(0,0,0,0.06);
+--shadow-md: 0 4px 20px rgba(0,0,0,0.08);
+
+--radius: 10px;
+--radius-sm: 6px;
+
+--font: 'DM Sans', sans-serif;
+
+}

@@ -1,0 +1,46 @@
+/* PAGE HEADER */
+
+.page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 28px;
+}
+
+.page-header-text h1 {
+    font-size: 20px;
+    font-weight: 700;
+    margin-bottom: 6px;
+}
+
+.page-header-text p {
+    font-size: 13.5px;
+    color: var(--text-muted);
+    max-width: 600px;
+    line-height: 1.6;
+}
+
+.page-header-logo img {
+    height: 350px;
+}
+
+.page-header-logo-min img {
+    height: 64px;
+}
+
+
+/* TABLE CONTROLS */
+
+.table-controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+}
+
+.table-controls-left,
+.table-controls-right {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
