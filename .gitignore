@@ -1,5 +1,18 @@
+# entorno virtual
 venv/
+
+# python cache
 __pycache__/
 *.pyc
+
+# variables de entorno
 .env
+
+# configuracion editor
 .vscode/
+
+# claves privadas
+*.pem
+
+# backups de base de datos
+*.sql
