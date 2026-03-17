@@ -1,0 +1,80 @@
+/* ─── BADGES BASE ───────────────────────────────────── */
+
+.badge {
+display: inline-flex;
+align-items: center;
+gap: 6px;
+
+padding: 4px 10px;
+border-radius: 20px;
+
+font-size: 12px;
+font-weight: 500;
+font-family: var(--font);
+
+white-space: nowrap;
+}
+
+/* ─── VARIANTES DE ESTADO ───────────────────────────── */
+
+/* SUCCESS (Activo) */
+.badge-success {
+background: var(--success-bg);
+color: var(--success);
+}
+
+/* DANGER (Inactivo / Error) */
+.badge-danger {
+background: var(--danger-light);
+color: var(--danger);
+}
+
+/* PRIMARY (Info / destacado) */
+.badge-primary {
+background: var(--primary-light);
+color: var(--primary-dark);
+}
+
+/* MUTED (Neutral) */
+.badge-muted {
+background: var(--border-light);
+color: var(--text-muted);
+}
+
+/* ─── BADGE OUTLINE (opcional) ───────────────────────── */
+
+.badge-outline {
+background: transparent;
+border: 1px solid currentColor;
+}
+
+/* ─── TAMAÑOS ───────────────────────────────────────── */
+
+.badge-sm {
+font-size: 11px;
+padding: 2px 8px;
+}
+
+.badge-lg {
+font-size: 13px;
+padding: 6px 12px;
+}
+
+/* ─── BADGE CON ICONO ───────────────────────────────── */
+
+.badge i {
+width: 12px;
+height: 12px;
+stroke-width: 2;
+}
+
+/* ─── INTERACTIVO (opcional clickable) ───────────────── */
+
+.badge-clickable {
+cursor: pointer;
+transition: all 0.2s ease;
+}
+
+.badge-clickable:hover {
+filter: brightness(0.95);
+}
