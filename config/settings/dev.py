@@ -3,6 +3,7 @@ import os
 
 DEBUG = True
 ALLOWED_HOSTS = ["localhost", "127.0.0.1"]
+
 SECURE_SSL_REDIRECT = False
 SESSION_COOKIE_SECURE = False
 CSRF_COOKIE_SECURE = False
@@ -17,3 +18,8 @@ DATABASES = {
         'PORT': os.environ.get('DB_PORT', '5432'),
     }
 }
+
+# =========================
+# EMAIL — Imprime los emails en la terminal.
+# =========================
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'

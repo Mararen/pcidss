@@ -10,6 +10,10 @@ from django.urls import reverse_lazy
 from django.db.models import Q
 from django import forms
 from django.contrib.auth.forms import UserCreationForm
+from django.core.mail import send_mail
+from django.contrib.auth.tokens import default_token_generator
+from django.utils.http import urlsafe_base64_encode
+from django.utils.encoding import force_bytes
 
 from .models import Entidad
 
@@ -42,6 +46,35 @@ def dashboard(request):
 def logout_view(request):
     logout(request)
     return redirect("login")
+
+
+# ─── Forgot Password ──────────────────────────────────────
+
+def forgot_password(request):
+    message = None
+
+    if request.method == 'POST':
+        email = request.POST.get('email')
+        try:
+            user = User.objects.get(email=email)
+            token = default_token_generator.make_token(user)
+            uid = urlsafe_base64_encode(force_bytes(user.pk))
+            reset_link = request.build_absolute_uri(
+                f'/reset-password/{uid}/{token}/'
+            )
+            send_mail(
+                subject='Restablecer contraseña — PCI Cert Pro',
+                message=f'Haz clic aquí para restablecer tu contraseña:\n\n{reset_link}',
+                from_email='noreply@pci-cert-pro.com',
+                recipient_list=[email],
+            )
+        except User.DoesNotExist:
+            pass  # No revelamos si el correo existe (seguridad)
+
+        # Siempre mostramos el mismo mensaje
+        message = 'Si ese correo está registrado, recibirás un enlace en breve.'
+
+    return render(request, 'users/forgot_password.html', {'message': message})
 
 
 # ─── Mixin ────────────────────────────────────────────────
@@ -160,7 +193,7 @@ class EntidadUpdateView(SoloAdminMixin, UpdateView):
     success_url = reverse_lazy("entidades_lista")
 
 
-# ─── NUEVO: Detalle Entidad ───────────────────────────────
+# ─── Detalle Entidad ──────────────────────────────────────
 
 class EntidadDetalleView(SoloAdminMixin, DetailView):
     model = Entidad

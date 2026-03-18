@@ -9,17 +9,13 @@ load_dotenv(BASE_DIR / ".env")
 # =========================
 # SECURITY
 # =========================
-
 SECRET_KEY = os.environ.get("SECRET_KEY")
-
 DEBUG = os.environ.get("DEBUG", "False") == "True"
-
 ALLOWED_HOSTS = os.environ.get("DJANGO_ALLOWED_HOSTS", "").split(",")
 
 # =========================
 # APPLICATIONS
 # =========================
-
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -27,7 +23,6 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-
     # Apps del proyecto
     'users',
     'saq',
@@ -36,7 +31,6 @@ INSTALLED_APPS = [
 # =========================
 # MIDDLEWARE
 # =========================
-
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
@@ -51,14 +45,12 @@ MIDDLEWARE = [
 # =========================
 # URLS / WSGI
 # =========================
-
 ROOT_URLCONF = 'config.urls'
 WSGI_APPLICATION = 'config.wsgi.application'
 
 # =========================
 # TEMPLATES
 # =========================
-
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
@@ -78,7 +70,6 @@ TEMPLATES = [
 # =========================
 # DATABASE (base)
 # =========================
-
 DATABASES = {
     'default': dj_database_url.config(
         default=os.environ.get("DATABASE_URL"),
@@ -89,7 +80,6 @@ DATABASES = {
 # =========================
 # PASSWORD VALIDATION
 # =========================
-
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
     {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
@@ -101,32 +91,31 @@ AUTH_PASSWORD_VALIDATORS = [
 # =========================
 # INTERNATIONALIZATION
 # =========================
-
 LANGUAGE_CODE = 'es-mx'
 TIME_ZONE = 'America/Mexico_City'
-
 USE_I18N = True
 USE_TZ = True
 
 # =========================
 # STATIC FILES
 # =========================
-
 STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / "staticfiles"
-
 STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 
 # =========================
 # DEFAULT PK
 # =========================
-
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # =========================
 # AUTH REDIRECTS
 # =========================
-
 LOGIN_URL = '/'
 LOGIN_REDIRECT_URL = '/dashboard/'
 LOGOUT_REDIRECT_URL = '/'
+
+# =========================
+# EMAIL
+# =========================
+DEFAULT_FROM_EMAIL = os.environ.get("EMAIL_HOST_USER", "noreply@pci-cert-pro.com")
