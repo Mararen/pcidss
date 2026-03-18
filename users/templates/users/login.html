@@ -6,18 +6,29 @@
     <title>Login | PCI Cert Pro</title>
     <link rel="stylesheet" href="{% static 'users/css/main.css' %}">
 </head>
-<body>
+<body class="login-page">
 
-    <!-- Login Card -->
-    <div class="login-container">
+    <!-- HERO / BANNER -->
+    <section class="login-hero">
+        <img src="{% static 'users/img/banner.jpg' %}" alt="Banner">
+
+        <div class="login-hero-overlay">
+            <img src="{% static 'users/img/logo.png' %}" class="login-logo">
+            <h1>PCI Cert <span>Pro</span></h1>
+        </div>
+    </section>
+
+    <!-- LOGIN -->
+    <section class="login-wrapper">
+
         <div class="login-card">
+
             <form method="post">
-				{% if error %}
-					<p style="color:red;
-					text-align:center;">{{ error }}</p>
-				{% endif %}
-				
                 {% csrf_token %}
+
+                {% if error %}
+                    <div class="login-error">{{ error }}</div>
+                {% endif %}
 
                 <label>Nombre de usuario</label>
                 <input type="text" name="username" required>
@@ -25,21 +36,24 @@
                 <label>Contraseña</label>
                 <input type="password" name="password" required>
 
-                <div class="options">
-                    <label class="remember">
-                        <input type="checkbox" name="remember">
-                        Recordarme
-                    </label>
-                </div>
+                <label class="remember">
+                    <input type="checkbox" name="remember">
+                    Recordarme
+                </label>
 
-                <button type="submit">Iniciar Sesión</button>
+                <button type="submit" class="btn-primary">
+                    Iniciar Sesión
+                </button>
 
                 <div class="forgot">
                     <a href="#">¿Olvidaste tu contraseña?</a>
                 </div>
+
             </form>
+
         </div>
-    </div>
+
+    </section>
 
 </body>
 </html>
