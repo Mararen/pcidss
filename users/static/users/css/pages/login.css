@@ -9,7 +9,7 @@
 
 .login-hero {
     position: relative;
-    height: 260px;
+    height: 360px;
     overflow: hidden;
 }
 
@@ -37,11 +37,16 @@
 /* logo */
 
 .login-logo {
-    width: 120px;
+    width: 100px;
     margin-bottom: 10px;
 }
 
 /* título */
+
+.login-hero-overlay {
+    background: rgba(255,255,255,0.75);
+    backdrop-filter: blur(6px);
+}
 
 .login-hero-overlay h1 {
     font-size: 36px;
@@ -59,7 +64,7 @@
 .login-wrapper {
     display: flex;
     justify-content: center;
-    margin-top: -80px;
+    margin-top: -120px;
 }
 
 /* ─── CARD ───────────────────────────────────────── */
