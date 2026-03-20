@@ -1,5 +1,5 @@
 import os
-print("URLs cargadas desde:", os.path.abspath(__file__))  # eliminar en producción
+print("URLs cargadas desde:", os.path.abspath(__file__))
 
 from django.contrib import admin
 from django.urls import path, include

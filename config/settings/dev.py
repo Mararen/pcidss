@@ -8,6 +8,8 @@ SECURE_SSL_REDIRECT = False
 SESSION_COOKIE_SECURE = False
 CSRF_COOKIE_SECURE = False
 
+STATICFILES_DIRS = [BASE_DIR / "users" / "static"]
+
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
@@ -19,7 +21,4 @@ DATABASES = {
     }
 }
 
-# =========================
-# EMAIL — Imprime los emails en la terminal.
-# =========================
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'

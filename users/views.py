@@ -65,13 +65,12 @@ def forgot_password(request):
             send_mail(
                 subject='Restablecer contraseña — PCI Cert Pro',
                 message=f'Haz clic aquí para restablecer tu contraseña:\n\n{reset_link}',
-                from_email='noreply@pci-cert-pro.com',
+                from_email='pcicertpro@outlook.com',
                 recipient_list=[email],
             )
         except User.DoesNotExist:
-            pass  # No revelamos si el correo existe (seguridad)
+            pass  
 
-        # Siempre mostramos el mismo mensaje
         message = 'Si ese correo está registrado, recibirás un enlace en breve.'
 
     return render(request, 'users/forgot_password.html', {'message': message})
