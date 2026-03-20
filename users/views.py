@@ -1,5 +1,8 @@
 # Imports
 
+import os
+import requests
+
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
@@ -10,7 +13,6 @@ from django.urls import reverse_lazy
 from django.db.models import Q
 from django import forms
 from django.contrib.auth.forms import UserCreationForm
-from django.core.mail import send_mail
 from django.contrib.auth.tokens import default_token_generator
 from django.utils.http import urlsafe_base64_encode
 from django.utils.encoding import force_bytes
@@ -62,15 +64,23 @@ def forgot_password(request):
             reset_link = request.build_absolute_uri(
                 f'/reset-password/{uid}/{token}/'
             )
-            send_mail(
-                subject='Restablecer contraseña — PCI Cert Pro',
-                message=f'Haz clic aquí para restablecer tu contraseña:\n\n{reset_link}',
-                from_email='onboarding@resend.dev',
-                recipient_list=[email],
+            requests.post(
+                'https://api.resend.com/emails',
+                headers={
+                    'Authorization': f'Bearer {os.environ.get("RESEND_API_KEY")}',
+                    'Content-Type': 'application/json',
+                },
+                json={
+                    'from': 'onboarding@resend.dev',
+                    'to': [email],
+                    'subject': 'Restablecer contraseña — PCI Cert Pro',
+                    'text': f'Haz clic aquí para restablecer tu contraseña:\n\n{reset_link}',
+                }
             )
         except User.DoesNotExist:
-            pass  
+            pass  # No revelamos si el correo existe (seguridad)
 
+        # Siempre mostramos el mismo mensaje
         message = 'Si ese correo está registrado, recibirás un enlace en breve.'
 
     return render(request, 'users/forgot_password.html', {'message': message})
