@@ -65,7 +65,7 @@ def forgot_password(request):
             send_mail(
                 subject='Restablecer contraseña — PCI Cert Pro',
                 message=f'Haz clic aquí para restablecer tu contraseña:\n\n{reset_link}',
-                from_email='pcicertpro@outlook.com',
+                from_email='onboarding@resend.dev',
                 recipient_list=[email],
             )
         except User.DoesNotExist:
