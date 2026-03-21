@@ -13,7 +13,7 @@ urlpatterns = [
     path('reset-password/<uidb64>/<token>/',
         auth_views.PasswordResetConfirmView.as_view(
             template_name='users/reset_password_confirm.html',
-            success_url='/login/'
+            success_url='/'
         ),
         name='password_reset_confirm'),
 
