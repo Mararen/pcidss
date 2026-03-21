@@ -65,16 +65,16 @@ def forgot_password(request):
                 f'/reset-password/{uid}/{token}/'
             )
             requests.post(
-                'https://api.resend.com/emails',
+                'https://api.brevo.com/v3/smtp/email',
                 headers={
-                    'Authorization': f'Bearer {os.environ.get("RESEND_API_KEY")}',
+                    'api-key': os.environ.get('BREVO_API_KEY'),
                     'Content-Type': 'application/json',
                 },
                 json={
-                    'from': 'onboarding@resend.dev',
-                    'to': [email],
+                    'sender': {'name': 'PCI Cert Pro', 'email': 'pcicertpro@outlook.com'},
+                    'to': [{'email': email}],
                     'subject': 'Restablecer contraseña — PCI Cert Pro',
-                    'text': f'Haz clic aquí para restablecer tu contraseña:\n\n{reset_link}',
+                    'textContent': f'Haz clic aquí para restablecer tu contraseña:\n\n{reset_link}',
                 }
             )
         except User.DoesNotExist:
