@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <title>Usuarios | PCI Cert Pro</title>
-    <link rel="stylesheet" href="{% static 'users/css/main.css' %}">
+    <link rel="stylesheet" href="{% static 'users/css/dashboard.css' %}">
 </head>
 <body>
 
@@ -30,7 +30,7 @@
                 <i data-feather="home"></i>
                 Entidades
             </a>
-            <a href="{% url 'saq' %}">
+            <a href="#">
                 <i data-feather="file-text"></i>
                 SAQ
             </a>
@@ -56,30 +56,20 @@
     <!-- MAIN -->
     <main class="main-content">
 
-    <!-- TOPBAR -->
-    <header class="topbar">
-
-        <nav class="topbar-nav">
-            <a href="{% url 'dashboard' %}">Dashboard</a>
-            <a href="#">Catálogos</a>
-            <a href="#">Configuración</a>
-            <a href="#">Ayuda</a>
-        </nav>
-
-        <div class="topbar-right">
-
+        <!-- TOPBAR -->
+        <header class="topbar">
+            <nav class="topbar-nav">
+                <a href="{% url 'dashboard' %}">Dashboard</a>
+                <a href="#">Catálogos</a>
+                <a href="#">Configuración</a>
+                <a href="#">Ayuda</a>
+            </nav>
             <div class="topbar-search">
-                <i data-feather="search"></i>
+                <i data-feather="search" style="width:14px;height:14px;stroke:rgba(255,255,255,0.7)"></i>
                 <input type="text" placeholder="Buscar...">
             </div>
-
-            <div class="topbar-lang">
-                Eng ▾
-            </div>
-
-        </div>
-
-    </header>
+            <div class="topbar-lang">Eng ▾</div>
+        </header>
 
         <!-- CONTENT -->
         <section class="content">
@@ -91,17 +81,12 @@
                     <p>Crea, edita o elimina usuarios, define roles con distintos niveles de acceso y gestiona la autenticación
                     de manera centralizada para mantener el control y la trazabilidad de acciones.</p>
                 </div>
-                <div class="page-header-logo-min">
+                <div class="page-header-logo">
                     <img src="{% static 'users/img/logo.png' %}" alt="PCI Cert Pro">
                 </div>
             </div>
 
-            <!-- ADD BUTTON -->
-            <div style="display:flex; justify-content:flex-end; margin-bottom: 16px;">
-                <a href="{% url 'usuario_crear' %}" class="btn-add" title="Nuevo Usuario">
-                    <i data-feather="plus" style="width:20px;height:20px;stroke-width:2.5"></i>
-                </a>
-            </div>
+
 
             <!-- TABLE CONTROLS -->
             <div class="table-controls">
@@ -155,14 +140,15 @@
                         <td style="color: var(--text-muted);">—</td>
                         <td>
                             <div class="actions">
-                                <a href="{% url 'usuario_editar' user.pk %}" class="btn-icon" title="Ver">
-                                    <i data-feather="search" style="width:14px;height:14px"></i>
+                                <a href="{% url 'usuario_detalle' user.pk %}" class="btn-icon" title="Ver">
+                                    <i data-feather="eye" style="width:14px;height:14px"></i>
                                 </a>
                                 <a href="{% url 'usuario_editar' user.pk %}" class="btn-icon" title="Editar">
                                     <i data-feather="edit-2" style="width:14px;height:14px"></i>
                                 </a>
-                                <a href="{% url 'usuario_eliminar' user.pk %}" class="btn-icon btn-icon-delete" title="Eliminar">
-                                    <i data-feather="trash-2" style="width:14px;height:14px"></i>
+                                {% url 'usuario_toggle' user.pk as toggle_url %}
+                                <a href="{{ toggle_url }}" class="btn-icon {% if not user.is_active %}btn-icon-delete{% endif %}" title="{% if user.is_active %}Desactivar{% else %}Activar{% endif %}">
+                                    <i data-feather="{% if user.is_active %}toggle-right{% else %}toggle-left{% endif %}" style="width:14px;height:14px"></i>
                                 </a>
                             </div>
                         </td>

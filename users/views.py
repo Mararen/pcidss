@@ -7,12 +7,11 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
-from django.contrib.auth.mixins import UserPassesTestMixin, LoginRequiredMixin
-from django.views.generic import ListView, CreateView, UpdateView, DeleteView, DetailView
+from django.contrib.auth.mixins import UserPassesTestMixin
+from django.views.generic import ListView, UpdateView, DetailView
 from django.urls import reverse_lazy
 from django.db.models import Q
 from django import forms
-from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.tokens import default_token_generator
 from django.utils.http import urlsafe_base64_encode
 from django.utils.encoding import force_bytes
@@ -26,9 +25,7 @@ def login_view(request):
     if request.method == "POST":
         username = request.POST.get("username")
         password = request.POST.get("password")
-
         user = authenticate(request, username=username, password=password)
-
         if user is not None:
             login(request, user)
             return redirect("dashboard")
@@ -36,7 +33,6 @@ def login_view(request):
             return render(request, "users/login.html", {
                 "error": "Credenciales incorrectas"
             })
-
     return render(request, "users/login.html")
 
 
@@ -54,7 +50,6 @@ def logout_view(request):
 
 def forgot_password(request):
     message = None
-
     if request.method == 'POST':
         email = request.POST.get('email')
         try:
@@ -78,11 +73,8 @@ def forgot_password(request):
                 }
             )
         except User.DoesNotExist:
-            pass  # No revelamos si el correo existe (seguridad)
-
-        # Siempre mostramos el mismo mensaje
+            pass
         message = 'Si ese correo está registrado, recibirás un enlace en breve.'
-
     return render(request, 'users/forgot_password.html', {'message': message})
 
 
@@ -95,30 +87,23 @@ class SoloAdminMixin(UserPassesTestMixin):
 
 # ─── Forms Usuarios ───────────────────────────────────────
 
-class UsuarioCreateForm(UserCreationForm):
-    class Meta:
-        model = User
-        fields = ["username", "first_name", "last_name", "email"]
-
-
 class UsuarioUpdateForm(forms.ModelForm):
     class Meta:
         model = User
         fields = ["username", "first_name", "last_name", "email", "is_active"]
 
 
-# ─── CRUD Usuarios ────────────────────────────────────────
+# ─── Usuarios: Ver + Editar + Toggle ─────────────────────
 
 class UsuarioListView(SoloAdminMixin, ListView):
     model = User
     template_name = "users/usuarios_lista.html"
     context_object_name = "usuarios"
-    paginate_by = 5
+    paginate_by = 10
 
     def get_queryset(self):
         queryset = User.objects.all().order_by("-date_joined")
         search = self.request.GET.get("buscar")
-
         if search:
             queryset = queryset.filter(
                 Q(username__icontains=search) |
@@ -126,15 +111,13 @@ class UsuarioListView(SoloAdminMixin, ListView):
                 Q(last_name__icontains=search) |
                 Q(email__icontains=search)
             )
-
         return queryset
 
 
-class UsuarioCreateView(SoloAdminMixin, CreateView):
+class UsuarioDetalleView(SoloAdminMixin, DetailView):
     model = User
-    form_class = UsuarioCreateForm
-    template_name = "users/usuarios_form.html"
-    success_url = reverse_lazy("usuarios_lista")
+    template_name = "users/usuario_detalle.html"
+    context_object_name = "usuario"
 
 
 class UsuarioUpdateView(SoloAdminMixin, UpdateView):
@@ -144,10 +127,13 @@ class UsuarioUpdateView(SoloAdminMixin, UpdateView):
     success_url = reverse_lazy("usuarios_lista")
 
 
-class UsuarioDeleteView(SoloAdminMixin, DeleteView):
-    model = User
-    template_name = "users/usuarios_eliminar.html"
-    success_url = reverse_lazy("usuarios_lista")
+@login_required
+def usuario_toggle(request, pk):
+    usuario = get_object_or_404(User, pk=pk)
+    if request.user.is_superuser:
+        usuario.is_active = not usuario.is_active
+        usuario.save()
+    return redirect("usuarios_lista")
 
 
 # ─── Forms Entidades ──────────────────────────────────────
@@ -165,7 +151,7 @@ class EntidadForm(forms.ModelForm):
         ]
 
 
-# ─── CRUD Entidades ───────────────────────────────────────
+# ─── Entidades: Ver + Editar + Toggle ────────────────────
 
 class EntidadListView(SoloAdminMixin, ListView):
     model = Entidad
@@ -176,7 +162,6 @@ class EntidadListView(SoloAdminMixin, ListView):
     def get_queryset(self):
         queryset = Entidad.objects.select_related("usuario").order_by("-fecha_modificacion")
         search = self.request.GET.get("buscar")
-
         if search:
             queryset = queryset.filter(
                 Q(nombre_empresa__icontains=search) |
@@ -184,15 +169,13 @@ class EntidadListView(SoloAdminMixin, ListView):
                 Q(email__icontains=search) |
                 Q(contacto__icontains=search)
             )
-
         return queryset
 
 
-class EntidadCreateView(SoloAdminMixin, CreateView):
+class EntidadDetalleView(SoloAdminMixin, DetailView):
     model = Entidad
-    form_class = EntidadForm
-    template_name = "users/entidades_form.html"
-    success_url = reverse_lazy("entidades_lista")
+    template_name = "users/entidad_detalle.html"
+    context_object_name = "entidad"
 
 
 class EntidadUpdateView(SoloAdminMixin, UpdateView):
@@ -202,24 +185,12 @@ class EntidadUpdateView(SoloAdminMixin, UpdateView):
     success_url = reverse_lazy("entidades_lista")
 
 
-# ─── Detalle Entidad ──────────────────────────────────────
-
-class EntidadDetalleView(SoloAdminMixin, DetailView):
-    model = Entidad
-    template_name = "users/entidad_detalle.html"
-    context_object_name = "entidad"
-
-
-# ─── Toggle Activo Entidad ────────────────────────────────
-
 @login_required
 def entidad_toggle(request, pk):
     entidad = get_object_or_404(Entidad, pk=pk)
-
     if request.user.is_superuser:
         entidad.is_active = not entidad.is_active
         entidad.save()
-
     return redirect("entidades_lista")
 
 
