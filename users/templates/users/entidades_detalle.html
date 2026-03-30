@@ -1,138 +1,113 @@
-{% extends "users/base.html" %}
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ entidad.nombre_empresa }} | PCI Cert Pro</title>
+    <link rel="stylesheet" href="{% static 'users/css/main.css' %}">
+</head>
+<body>
+<div class="layout">
 
-{% block content %}
+    <aside class="sidebar">
+        <div class="profile">
+            <img src="{% static 'users/img/profile.png' %}" alt="Perfil">
+            <h4>{{ request.user.get_full_name|default:request.user.username }}</h4>
+            <p>Administrador Global</p>
+        </div>
+        <nav class="menu">
+            <a href="{% url 'dashboard' %}"><i data-feather="grid"></i> Dashboard</a>
+            <a href="{% url 'usuarios_lista' %}"><i data-feather="users"></i> Usuarios</a>
+            <a href="{% url 'entidades_lista' %}" class="active"><i data-feather="home"></i> Entidades</a>
+            <a href="{% url 'saq' %}"><i data-feather="file-text"></i> SAQ</a>
+            <a href="#"><i data-feather="check-square"></i> Pre-Test</a>
+            <a href="#"><i data-feather="paperclip"></i> Evidencias</a>
+            <a href="#"><i data-feather="star"></i> Renovación</a>
+            <a href="{% url 'logout' %}" class="logout"><i data-feather="log-out"></i> Cerrar Sesión</a>
+        </nav>
+    </aside>
 
-<div class="page-header">
-    <h1>Detalle de Entidad</h1>
+    <main class="main-content">
 
-    <div class="page-actions">
-        <a href="{% url 'entidad_editar' entidad.id %}" class="btn btn-primary">Editar</a>
-        <a href="{% url 'entidad_toggle' entidad.id %}" class="btn btn-secondary">
-            {% if entidad.is_active %}Desactivar{% else %}Activar{% endif %}
-        </a>
-    </div>
+        <header class="topbar">
+            <nav class="topbar-nav">
+                <a href="{% url 'dashboard' %}">Dashboard</a>
+                <a href="#">Catálogos</a>
+                <a href="#">Configuración</a>
+                <a href="#">Ayuda</a>
+            </nav>
+            <div class="topbar-right">
+                <div class="topbar-search">
+                    <i data-feather="search"></i>
+                    <input type="text" placeholder="Buscar...">
+                </div>
+                <div class="topbar-lang">Eng ▾</div>
+            </div>
+        </header>
+
+        <section class="content">
+
+            <div class="page-header">
+                <div class="page-header-text">
+                    <h1>Detalle de Entidad</h1>
+                    <p>Información de <strong>{{ entidad.nombre_empresa }}</strong>.</p>
+                </div>
+                <div class="page-actions">
+                    <a href="{% url 'entidad_editar' entidad.pk %}" class="btn-primary">
+                        <i data-feather="edit-2" style="width:13px;height:13px;vertical-align:middle;margin-right:4px;"></i>
+                        Editar
+                    </a>
+                    {% url 'entidad_toggle' entidad.pk as toggle_url %}
+                    <a href="{{ toggle_url }}" class="btn-secondary">
+                        {% if entidad.is_active %}Desactivar{% else %}Activar{% endif %}
+                    </a>
+                </div>
+            </div>
+
+            <div class="form-card">
+
+                <div class="detail-row">
+                    <span class="label">Usuario asignado</span>
+                    <span class="value">{{ entidad.usuario.username }}</span>
+                </div>
+                <div class="detail-row">
+                    <span class="label">Nombre de la empresa</span>
+                    <span class="value">{{ entidad.nombre_empresa }}</span>
+                </div>
+                <div class="detail-row">
+                    <span class="label">DBA</span>
+                    <span class="value">{{ entidad.dba|default:"—" }}</span>
+                </div>
+                <div class="detail-row">
+                    <span class="label">Email</span>
+                    <span class="value">{{ entidad.email|default:"—" }}</span>
+                </div>
+                <div class="detail-row">
+                    <span class="label">Sitio web</span>
+                    <span class="value">{{ entidad.sitio_web|default:"—" }}</span>
+                </div>
+                <div class="detail-row">
+                    <span class="label">Contacto</span>
+                    <span class="value">{{ entidad.contacto|default:"—" }}</span>
+                </div>
+                <div class="detail-row">
+                    <span class="label">Estado</span>
+                    <span class="value">
+                        {% if entidad.is_active %}
+                            <span class="badge badge-success">Activa</span>
+                        {% else %}
+                            <span class="badge badge-danger">Inactiva</span>
+                        {% endif %}
+                    </span>
+                </div>
+
+                <a href="{% url 'entidades_lista' %}" class="btn-back">← Volver a Entidades</a>
+            </div>
+
+        </section>
+    </main>
 </div>
-
-
-<div class="card-grid">
-
-    <!-- Información empresa -->
-    <div class="card">
-        <div class="card-header">
-            <h3>Empresa</h3>
-        </div>
-
-        <div class="card-body">
-
-            <div class="detail-row">
-                <span class="label">Nombre empresa</span>
-                <span class="value">{{ entidad.nombre_empresa }}</span>
-            </div>
-
-            <div class="detail-row">
-                <span class="label">DBA</span>
-                <span class="value">{{ entidad.dba|default:"—" }}</span>
-            </div>
-
-            <div class="detail-row">
-                <span class="label">Sitio web</span>
-                <span class="value">
-                    {% if entidad.sitio_web %}
-                        <a href="{{ entidad.sitio_web }}" target="_blank">{{ entidad.sitio_web }}</a>
-                    {% else %}
-                        —
-                    {% endif %}
-                </span>
-            </div>
-
-            <div class="detail-row">
-                <span class="label">Estado</span>
-                <span class="badge {% if entidad.is_active %}badge-success{% else %}badge-danger{% endif %}">
-                    {% if entidad.is_active %}Activo{% else %}Inactivo{% endif %}
-                </span>
-            </div>
-
-        </div>
-    </div>
-
-
-    <!-- Contacto -->
-    <div class="card">
-        <div class="card-header">
-            <h3>Contacto</h3>
-        </div>
-
-        <div class="card-body">
-
-            <div class="detail-row">
-                <span class="label">Email</span>
-                <span class="value">{{ entidad.email|default:"—" }}</span>
-            </div>
-
-            <div class="detail-row">
-                <span class="label">Persona contacto</span>
-                <span class="value">{{ entidad.contacto|default:"—" }}</span>
-            </div>
-
-        </div>
-    </div>
-
-
-    <!-- Usuario asociado -->
-    <div class="card">
-        <div class="card-header">
-            <h3>Usuario</h3>
-        </div>
-
-        <div class="card-body">
-
-            <div class="detail-row">
-                <span class="label">Usuario</span>
-                <span class="value">{{ entidad.usuario.username }}</span>
-            </div>
-
-            <div class="detail-row">
-                <span class="label">Nombre</span>
-                <span class="value">
-                    {{ entidad.usuario.first_name }} {{ entidad.usuario.last_name }}
-                </span>
-            </div>
-
-            <div class="detail-row">
-                <span class="label">Email</span>
-                <span class="value">{{ entidad.usuario.email }}</span>
-            </div>
-
-        </div>
-    </div>
-
-
-    <!-- Fechas -->
-    <div class="card">
-        <div class="card-header">
-            <h3>Registro</h3>
-        </div>
-
-        <div class="card-body">
-
-            <div class="detail-row">
-                <span class="label">Fecha creación</span>
-                <span class="value">{{ entidad.fecha_creacion }}</span>
-            </div>
-
-            <div class="detail-row">
-                <span class="label">Última modificación</span>
-                <span class="value">{{ entidad.fecha_modificacion }}</span>
-            </div>
-
-        </div>
-    </div>
-
-</div>
-
-
-<a href="{% url 'entidades_lista' %}" class="btn-back">
-    ← Volver a entidades
-</a>
-
-{% endblock %}
+<script src="https://unpkg.com/feather-icons/dist/feather.min.js"></script>
+<script>feather.replace({'stroke-width': 2})</script>
+</body>
+</html>

@@ -7,7 +7,6 @@
     <link rel="stylesheet" href="{% static 'users/css/main.css' %}">
 </head>
 <body>
-
 <div class="layout">
 
     <!-- SIDEBAR -->
@@ -18,89 +17,48 @@
             <p>Administrador Global</p>
         </div>
         <nav class="menu">
-            <a href="{% url 'dashboard' %}">
-                <i data-feather="grid"></i>
-                Dashboard
-            </a>
-            <a href="{% url 'usuarios_lista' %}" class="active">
-                <i data-feather="users"></i>
-                Usuarios
-            </a>
-            <a href="{% url 'entidades_lista' %}">
-                <i data-feather="home"></i>
-                Entidades
-            </a>
-            <a href="{% url 'saq' %}">
-                <i data-feather="file-text"></i>
-                SAQ
-            </a>
-            <a href="#">
-                <i data-feather="check-square"></i>
-                Pre-Test
-            </a>
-            <a href="#">
-                <i data-feather="paperclip"></i>
-                Evidencias
-            </a>
-            <a href="#">
-                <i data-feather="star"></i>
-                Renovación
-            </a>
-            <a href="{% url 'logout' %}" class="logout">
-                <i data-feather="log-out"></i>
-                Cerrar Sesión
-            </a>
+            <a href="{% url 'dashboard' %}"><i data-feather="grid"></i> Dashboard</a>
+            <a href="{% url 'usuarios_lista' %}" class="active"><i data-feather="users"></i> Usuarios</a>
+            <a href="{% url 'entidades_lista' %}"><i data-feather="home"></i> Entidades</a>
+            <a href="{% url 'saq' %}"><i data-feather="file-text"></i> SAQ</a>
+            <a href="#"><i data-feather="check-square"></i> Pre-Test</a>
+            <a href="#"><i data-feather="paperclip"></i> Evidencias</a>
+            <a href="#"><i data-feather="star"></i> Renovación</a>
+            <a href="{% url 'logout' %}" class="logout"><i data-feather="log-out"></i> Cerrar Sesión</a>
         </nav>
     </aside>
 
     <!-- MAIN -->
     <main class="main-content">
 
-    <!-- TOPBAR -->
-    <header class="topbar">
-
-        <nav class="topbar-nav">
-            <a href="{% url 'dashboard' %}">Dashboard</a>
-            <a href="#">Catálogos</a>
-            <a href="#">Configuración</a>
-            <a href="#">Ayuda</a>
-        </nav>
-
-        <div class="topbar-right">
-
-            <div class="topbar-search">
-                <i data-feather="search"></i>
-                <input type="text" placeholder="Buscar...">
+        <!-- TOPBAR -->
+        <header class="topbar">
+            <nav class="topbar-nav">
+                <a href="{% url 'dashboard' %}">Dashboard</a>
+                <a href="#">Catálogos</a>
+                <a href="#">Configuración</a>
+                <a href="#">Ayuda</a>
+            </nav>
+            <div class="topbar-right">
+                <div class="topbar-search">
+                    <i data-feather="search"></i>
+                    <input type="text" placeholder="Buscar...">
+                </div>
+                <div class="topbar-lang">Eng ▾</div>
             </div>
-
-            <div class="topbar-lang">
-                Eng ▾
-            </div>
-
-        </div>
-
-    </header>
+        </header>
 
         <!-- CONTENT -->
         <section class="content">
 
-            <!-- PAGE HEADER -->
             <div class="page-header">
                 <div class="page-header-text">
                     <h1>Administración de usuarios y roles</h1>
-                    <p>Crea, edita o elimina usuarios, define roles con distintos niveles de acceso y gestiona la autenticación
-                    de manera centralizada para mantener el control y la trazabilidad de acciones.</p>
+                    <p>Visualiza, edita y activa o desactiva usuarios con distintos niveles de acceso.</p>
                 </div>
                 <div class="page-header-logo-min">
                     <img src="{% static 'users/img/logo.png' %}" alt="PCI Cert Pro">
                 </div>
-            </div>
-
-            <!-- ADD BUTTON -->
-            <div style="display:flex; justify-content:flex-end; margin-bottom: 16px;">
-                <a href="{% url 'usuario_crear' %}" class="btn-add" title="Nuevo Usuario">
-                    <i data-feather="plus" style="width:20px;height:20px;stroke-width:2.5"></i>
-                </a>
             </div>
 
             <!-- TABLE CONTROLS -->
@@ -115,7 +73,7 @@
                 <div class="table-controls-right">
                     <label>Buscar</label>
                     <form method="get" class="search-box">
-                        <input type="text" name="buscar" placeholder="" value="{{ request.GET.buscar }}">
+                        <input type="text" name="buscar" value="{{ request.GET.buscar }}">
                     </form>
                 </div>
             </div>
@@ -126,11 +84,10 @@
                     <tr>
                         <th>Apellidos <span class="sort-icon">↑↓</span></th>
                         <th>Nombre <span class="sort-icon">↑↓</span></th>
-                        <th>Nombre de usuario <span class="sort-icon">↑↓</span></th>
+                        <th>Usuario <span class="sort-icon">↑↓</span></th>
                         <th>Correo <span class="sort-icon">↑↓</span></th>
-                        <th>Confirmado <span class="sort-icon">↑↓</span></th>
-                        <th>Roles <span class="sort-icon">↑↓</span></th>
-                        <th>Última modificación <span class="sort-icon">↑↓</span></th>
+                        <th>Activo <span class="sort-icon">↑↓</span></th>
+                        <th>Rol <span class="sort-icon">↑↓</span></th>
                         <th>Acciones</th>
                     </tr>
                 </thead>
@@ -149,27 +106,28 @@
                             {% endif %}
                         </td>
                         <td>
-                            {% if user.is_superuser %}Administrador Global
-                            {% else %}Usuario{% endif %}
+                            {% if user.is_superuser %}Administrador Global{% else %}Usuario{% endif %}
                         </td>
-                        <td style="color: var(--text-muted);">—</td>
                         <td>
                             <div class="actions">
-                                <a href="{% url 'usuario_editar' user.pk %}" class="btn-icon" title="Ver">
-                                    <i data-feather="search" style="width:14px;height:14px"></i>
+                                <a href="{% url 'usuario_detalle' user.pk %}" class="btn-icon" title="Ver">
+                                    <i data-feather="eye"></i>
                                 </a>
                                 <a href="{% url 'usuario_editar' user.pk %}" class="btn-icon" title="Editar">
-                                    <i data-feather="edit-2" style="width:14px;height:14px"></i>
+                                    <i data-feather="edit-2"></i>
                                 </a>
-                                <a href="{% url 'usuario_eliminar' user.pk %}" class="btn-icon btn-icon-delete" title="Eliminar">
-                                    <i data-feather="trash-2" style="width:14px;height:14px"></i>
+                                {% url 'usuario_toggle' user.pk as toggle_url %}
+                                <a href="{{ toggle_url }}"
+                                   class="btn-icon {% if user.is_active %}danger{% endif %}"
+                                   title="{% if user.is_active %}Desactivar{% else %}Activar{% endif %}">
+                                    <i data-feather="{% if user.is_active %}toggle-right{% else %}toggle-left{% endif %}"></i>
                                 </a>
                             </div>
                         </td>
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="8" style="text-align:center; color:var(--text-muted); padding:30px;">
+                        <td colspan="7" style="text-align:center; color:var(--text-muted); padding:30px;">
                             No hay usuarios registrados.
                         </td>
                     </tr>
@@ -180,8 +138,8 @@
             <!-- PAGINATION -->
             <div class="pagination">
                 <div class="pagination-info">
-                    Mostrando registros del {{ page_obj.start_index }} al {{ page_obj.end_index }}
-                    de un total de {{ page_obj.paginator.count }} registros
+                    Mostrando {{ page_obj.start_index }}–{{ page_obj.end_index }}
+                    de {{ page_obj.paginator.count }} registros
                 </div>
                 <div class="pagination-controls">
                     {% if page_obj.has_previous %}
@@ -209,9 +167,7 @@
         </section>
     </main>
 </div>
-
-
-    <script src="https://unpkg.com/feather-icons/dist/feather.min.js"></script>
-    <script>feather.replace({'stroke-width': 2})</script>
+<script src="https://unpkg.com/feather-icons/dist/feather.min.js"></script>
+<script>feather.replace({'stroke-width': 2})</script>
 </body>
 </html>

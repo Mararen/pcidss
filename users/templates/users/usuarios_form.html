@@ -7,7 +7,6 @@
     <link rel="stylesheet" href="{% static 'users/css/main.css' %}">
 </head>
 <body>
-
 <div class="layout">
 
     <!-- SIDEBAR -->
@@ -18,90 +17,50 @@
             <p>Administrador Global</p>
         </div>
         <nav class="menu">
-            <a href="{% url 'dashboard' %}">
-                <i data-feather="grid"></i>
-                Dashboard
-            </a>
-            <a href="{% url 'usuarios_lista' %}" class="active">
-                <i data-feather="users"></i>
-                Usuarios
-            </a>
-            <a href="{% url 'entidades_lista' %}">
-                <i data-feather="home"></i>
-                Entidades
-            </a>
-            <a href="{% url 'saq' %}">
-                <i data-feather="file-text"></i>
-                SAQ
-            </a>
-            <a href="#">
-                <i data-feather="check-square"></i>
-                Pre-Test
-            </a>
-            <a href="#">
-                <i data-feather="paperclip"></i>
-                Evidencias
-            </a>
-            <a href="#">
-                <i data-feather="star"></i>
-                Renovación
-            </a>
-            <a href="{% url 'logout' %}" class="logout">
-                <i data-feather="log-out"></i>
-                Cerrar Sesión
-            </a>
+            <a href="{% url 'dashboard' %}"><i data-feather="grid"></i> Dashboard</a>
+            <a href="{% url 'usuarios_lista' %}" class="active"><i data-feather="users"></i> Usuarios</a>
+            <a href="{% url 'entidades_lista' %}"><i data-feather="home"></i> Entidades</a>
+            <a href="{% url 'saq' %}"><i data-feather="file-text"></i> SAQ</a>
+            <a href="#"><i data-feather="check-square"></i> Pre-Test</a>
+            <a href="#"><i data-feather="paperclip"></i> Evidencias</a>
+            <a href="#"><i data-feather="star"></i> Renovación</a>
+            <a href="{% url 'logout' %}" class="logout"><i data-feather="log-out"></i> Cerrar Sesión</a>
         </nav>
     </aside>
 
     <!-- MAIN -->
     <main class="main-content">
 
-    <!-- TOPBAR -->
-    <header class="topbar">
-
-        <nav class="topbar-nav">
-            <a href="{% url 'dashboard' %}">Dashboard</a>
-            <a href="#">Catálogos</a>
-            <a href="#">Configuración</a>
-            <a href="#">Ayuda</a>
-        </nav>
-
-        <div class="topbar-right">
-
-            <div class="topbar-search">
-                <i data-feather="search"></i>
-                <input type="text" placeholder="Buscar...">
+        <!-- TOPBAR -->
+        <header class="topbar">
+            <nav class="topbar-nav">
+                <a href="{% url 'dashboard' %}">Dashboard</a>
+                <a href="#">Catálogos</a>
+                <a href="#">Configuración</a>
+                <a href="#">Ayuda</a>
+            </nav>
+            <div class="topbar-right">
+                <div class="topbar-search">
+                    <i data-feather="search"></i>
+                    <input type="text" placeholder="Buscar...">
+                </div>
+                <div class="topbar-lang">Eng ▾</div>
             </div>
-
-            <div class="topbar-lang">
-                Eng ▾
-            </div>
-
-        </div>
-
-    </header>
+        </header>
 
         <!-- CONTENT -->
         <section class="content">
 
-            <!-- PAGE HEADER -->
             <div class="page-header">
                 <div class="page-header-text">
-                    <h1>{% if form.instance.pk %}Editar Usuario{% else %}Nuevo Usuario{% endif %}</h1>
-                    <p>
-                        {% if form.instance.pk %}
-                            Modifica los datos del usuario, su rol y estado de acceso.
-                        {% else %}
-                            Completa los campos para registrar un nuevo usuario en el sistema.
-                        {% endif %}
-                    </p>
+                    <h1>Editar Usuario</h1>
+                    <p>Modifica los datos del usuario, su rol y estado de acceso.</p>
                 </div>
-                <div class="page-header-pcilogo-min">
-                    <img src="{% static 'users/img/pcilogo.png' %}" alt="PCI Cert Pro">
+                <div class="page-header-logo-min">
+                    <img src="{% static 'users/img/logo.png' %}" alt="PCI Cert Pro">
                 </div>
             </div>
 
-            <!-- FORM CARD -->
             <div class="form-card">
                 <form method="post" class="form-modern">
                     {% csrf_token %}
@@ -116,9 +75,7 @@
         </section>
     </main>
 </div>
-
-
-    <script src="https://unpkg.com/feather-icons/dist/feather.min.js"></script>
-    <script>feather.replace({'stroke-width': 2})</script>
+<script src="https://unpkg.com/feather-icons/dist/feather.min.js"></script>
+<script>feather.replace({'stroke-width': 2})</script>
 </body>
 </html>

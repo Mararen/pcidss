@@ -1,7 +1,5 @@
 {% load static %}
-
 <!DOCTYPE html>
-
 <html lang="es">
 <head>
     <meta charset="UTF-8">
@@ -9,327 +7,162 @@
     <link rel="stylesheet" href="{% static 'users/css/main.css' %}">
 </head>
 <body>
-
 <div class="layout">
 
-<!-- SIDEBAR -->
-<aside class="sidebar">
-    <div class="profile">
-        <img src="{% static 'users/img/profile.png' %}" alt="Perfil">
-        <h4>{{ request.user.get_full_name|default:request.user.username }}</h4>
-        <p>Administrador Global</p>
-    </div>
-
-    <nav class="menu">
-        <a href="{% url 'dashboard' %}">
-            <i data-feather="grid"></i>
-            Dashboard
-        </a>
-
-        <a href="{% url 'usuarios_lista' %}">
-            <i data-feather="users"></i>
-            Usuarios
-        </a>
-
-        <a href="{% url 'entidades_lista' %}" class="active">
-            <i data-feather="home"></i>
-            Entidades
-        </a>
-
-        <a href="{% url 'saq' %}">
-            <i data-feather="file-text"></i>
-            SAQ
-        </a>
-
-        <a href="#">
-            <i data-feather="check-square"></i>
-            Pre-Test
-        </a>
-
-        <a href="#">
-            <i data-feather="paperclip"></i>
-            Evidencias
-        </a>
-
-        <a href="#">
-            <i data-feather="star"></i>
-            Renovación
-        </a>
-
-        <a href="{% url 'logout' %}" class="logout">
-            <i data-feather="log-out"></i>
-            Cerrar Sesión
-        </a>
-    </nav>
-</aside>
-
-
-<!-- MAIN -->
-<main class="main-content">
-
-    <!-- TOPBAR -->
-    <header class="topbar">
-
-        <nav class="topbar-nav">
-            <a href="{% url 'dashboard' %}">Dashboard</a>
-            <a href="#">Catálogos</a>
-            <a href="#">Configuración</a>
-            <a href="#">Ayuda</a>
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+        <div class="profile">
+            <img src="{% static 'users/img/profile.png' %}" alt="Perfil">
+            <h4>{{ request.user.get_full_name|default:request.user.username }}</h4>
+            <p>Administrador Global</p>
+        </div>
+        <nav class="menu">
+            <a href="{% url 'dashboard' %}"><i data-feather="grid"></i> Dashboard</a>
+            <a href="{% url 'usuarios_lista' %}"><i data-feather="users"></i> Usuarios</a>
+            <a href="{% url 'entidades_lista' %}" class="active"><i data-feather="home"></i> Entidades</a>
+            <a href="{% url 'saq' %}"><i data-feather="file-text"></i> SAQ</a>
+            <a href="#"><i data-feather="check-square"></i> Pre-Test</a>
+            <a href="#"><i data-feather="paperclip"></i> Evidencias</a>
+            <a href="#"><i data-feather="star"></i> Renovación</a>
+            <a href="{% url 'logout' %}" class="logout"><i data-feather="log-out"></i> Cerrar Sesión</a>
         </nav>
+    </aside>
 
-        <div class="topbar-right">
+    <!-- MAIN -->
+    <main class="main-content">
 
-            <div class="topbar-search">
-                <i data-feather="search"></i>
-                <input type="text" placeholder="Buscar...">
+        <!-- TOPBAR -->
+        <header class="topbar">
+            <nav class="topbar-nav">
+                <a href="{% url 'dashboard' %}">Dashboard</a>
+                <a href="#">Catálogos</a>
+                <a href="#">Configuración</a>
+                <a href="#">Ayuda</a>
+            </nav>
+            <div class="topbar-right">
+                <div class="topbar-search">
+                    <i data-feather="search"></i>
+                    <input type="text" placeholder="Buscar...">
+                </div>
+                <div class="topbar-lang">Eng ▾</div>
+            </div>
+        </header>
+
+        <!-- CONTENT -->
+        <section class="content">
+
+            <div class="page-header">
+                <div class="page-header-text">
+                    <h1>Administración de entidades</h1>
+                    <p>Visualiza, edita y activa o desactiva entidades registradas en el sistema.</p>
+                </div>
+                <div class="page-header-logo-min">
+                    <img src="{% static 'users/img/logo.png' %}" alt="PCI Cert Pro">
+                </div>
             </div>
 
-            <div class="topbar-lang">
-                Eng ▾
+            <!-- TABLE CONTROLS -->
+            <div class="table-controls">
+                <div class="table-controls-left">
+                    <label>Mostrar</label>
+                    <form method="get" style="display:flex;align-items:center;gap:8px;">
+                        <input type="number" name="per_page" value="{{ request.GET.per_page|default:'5' }}" min="5" max="100" style="width:60px;">
+                        <label>registros</label>
+                    </form>
+                </div>
+                <div class="table-controls-right">
+                    <label>Buscar</label>
+                    <form method="get" class="search-box">
+                        <input type="text" name="buscar" value="{{ request.GET.buscar }}">
+                    </form>
+                </div>
             </div>
 
-        </div>
-
-    </header>
-
-
-    <!-- CONTENT -->
-    <section class="content">
-
-        <!-- PAGE HEADER -->
-        <div class="page-header">
-
-            <div class="page-header-text">
-                <h1>Administración de entidades</h1>
-                <p>
-                    Crea, edita o elimina entidades, define roles con distintos niveles de acceso y gestiona la autenticación
-                    de manera centralizada para mantener el control y la trazabilidad de acciones.
-                </p>
-            </div>
-
-            <div class="page-header-logo-min">
-                <img src="{% static 'users/img/logo.png' %}" alt="PCI Cert Pro">
-            </div>
-
-        </div>
-
-
-        <!-- ADD BUTTON -->
-        <div style="display:flex; justify-content:flex-end; margin-bottom:16px;">
-            <a href="{% url 'entidad_crear' %}" class="btn-add" title="Nueva Entidad">
-                <i data-feather="plus"></i>
-            </a>
-        </div>
-
-
-        <!-- TABLE CONTROLS -->
-        <div class="table-controls">
-
-            <div class="table-controls-left">
-                <label>Mostrar</label>
-
-                <form method="get" style="display:flex;align-items:center;gap:8px;">
-                    <input type="number"
-                           name="per_page"
-                           value="{{ request.GET.per_page|default:'5' }}"
-                           min="5"
-                           max="100"
-                           style="width:60px;">
-                    <label>registros</label>
-                </form>
-            </div>
-
-            <div class="table-controls-right">
-                <label>Buscar</label>
-
-                <form method="get" class="search-box">
-                    <input type="text"
-                           name="buscar"
-                           value="{{ request.GET.buscar }}">
-                </form>
-            </div>
-
-        </div>
-
-
-        <!-- TABLE -->
-        <table class="modern-table">
-
-            <thead>
-                <tr>
-                    <th>Usuario <span class="sort-icon">↑↓</span></th>
-                    <th>Nombre de la empresa <span class="sort-icon">↑↓</span></th>
-                    <th>DBA <span class="sort-icon">↑↓</span></th>
-                    <th>Email <span class="sort-icon">↑↓</span></th>
-                    <th>Última modificación <span class="sort-icon">↑↓</span></th>
-                    <th>Contacto <span class="sort-icon">↑↓</span></th>
-                    <th>Activo</th>
-                    <th>Acciones</th>
-                </tr>
-            </thead>
-
-            <tbody>
-
-            {% for entidad in entidades %}
-
-                <tr>
-
-                    <td>{{ entidad.usuario.username }}</td>
-
-                    <td>{{ entidad.nombre_empresa }}</td>
-
-                    <td>{{ entidad.dba }}</td>
-
-                    <td>{{ entidad.email }}</td>
-
-                    <td style="color:var(--text-muted);">
-                        {{ entidad.updated_at|default:"—" }}
-                    </td>
-
-                    <td>{{ entidad.contacto }}</td>
-
-                    <td>
-
-                        {% url 'entidad_toggle' entidad.pk as toggle_url %}
-
-                        <label class="switch">
-
-                            <input type="checkbox"
-                                   {% if entidad.is_active %}checked{% endif %}
-                                   onchange="location.href='{{ toggle_url }}'">
-
-                            <span class="slider"></span>
-
-                        </label>
-
-                    </td>
-
-                    <td>
-
-                        <div class="actions">
-
-                            <!-- VER -->
-                            <a href="{% url 'entidad_detalle' entidad.pk %}"
-                               class="btn-icon"
-                               title="Ver">
-
-                                <i data-feather="eye"></i>
-
-                            </a>
-
-
-                            <!-- EDITAR -->
-                            <a href="{% url 'entidad_editar' entidad.pk %}"
-                               class="btn-icon"
-                               title="Editar">
-
-                                <i data-feather="edit-2"></i>
-
-                            </a>
-
-
-                            <!-- DESACTIVAR -->
-                            <a href="{% url 'entidad_toggle' entidad.pk %}"
-                               class="btn-icon danger"
-                               title="Desactivar">
-
-                                <i data-feather="slash"></i>
-
-                            </a>
-
-                        </div>
-
-                    </td>
-
-                </tr>
-
-            {% empty %}
-
-                <tr>
-                    <td colspan="8"
-                        style="text-align:center;
-                               color:var(--text-muted);
-                               padding:30px;">
-
-                        No hay entidades registradas.
-
-                    </td>
-                </tr>
-
-            {% endfor %}
-
-            </tbody>
-
-        </table>
-
-
-        <!-- PAGINATION -->
-        <div class="pagination">
-
-            <div class="pagination-info">
-
-                Mostrando registros del {{ page_obj.start_index }}
-                al {{ page_obj.end_index }}
-
-                de un total de {{ page_obj.paginator.count }} registros
-
-                (filtrado de un total de
-                {{ total_registros|default:page_obj.paginator.count }}
-                registros)
-
-            </div>
-
-
-            <div class="pagination-controls">
-
-                {% if page_obj.has_previous %}
-                    <a href="?page={{ page_obj.previous_page_number }}&buscar={{ request.GET.buscar }}">
-                        Anterior
-                    </a>
-                {% else %}
-                    <span style="opacity:0.4;">Anterior</span>
-                {% endif %}
-
-                {% for num in page_obj.paginator.page_range %}
-
-                    {% if num == page_obj.number %}
-
-                        <span class="current">{{ num }}</span>
-
-                    {% elif num|add:"-1" == page_obj.number or num|add:"1" == page_obj.number %}
-
-                        <a href="?page={{ num }}&buscar={{ request.GET.buscar }}">
-                            {{ num }}
-                        </a>
-
+            <!-- TABLE -->
+            <table class="modern-table">
+                <thead>
+                    <tr>
+                        <th>Usuario <span class="sort-icon">↑↓</span></th>
+                        <th>Empresa <span class="sort-icon">↑↓</span></th>
+                        <th>DBA <span class="sort-icon">↑↓</span></th>
+                        <th>Email <span class="sort-icon">↑↓</span></th>
+                        <th>Contacto <span class="sort-icon">↑↓</span></th>
+                        <th>Activo</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for entidad in entidades %}
+                    <tr>
+                        <td>{{ entidad.usuario.username }}</td>
+                        <td>{{ entidad.nombre_empresa }}</td>
+                        <td>{{ entidad.dba }}</td>
+                        <td>{{ entidad.email }}</td>
+                        <td>{{ entidad.contacto }}</td>
+                        <td>
+                            {% url 'entidad_toggle' entidad.pk as toggle_url %}
+                            <label class="switch">
+                                <input type="checkbox"
+                                       {% if entidad.is_active %}checked{% endif %}
+                                       onchange="location.href='{{ toggle_url }}'">
+                                <span class="slider"></span>
+                            </label>
+                        </td>
+                        <td>
+                            <div class="actions">
+                                <a href="{% url 'entidad_detalle' entidad.pk %}" class="btn-icon" title="Ver">
+                                    <i data-feather="eye"></i>
+                                </a>
+                                <a href="{% url 'entidad_editar' entidad.pk %}" class="btn-icon" title="Editar">
+                                    <i data-feather="edit-2"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" style="text-align:center; color:var(--text-muted); padding:30px;">
+                            No hay entidades registradas.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+
+            <!-- PAGINATION -->
+            <div class="pagination">
+                <div class="pagination-info">
+                    Mostrando {{ page_obj.start_index }}–{{ page_obj.end_index }}
+                    de {{ page_obj.paginator.count }} registros
+                    (filtrado de {{ total_registros|default:page_obj.paginator.count }})
+                </div>
+                <div class="pagination-controls">
+                    {% if page_obj.has_previous %}
+                        <a href="?page={{ page_obj.previous_page_number }}&buscar={{ request.GET.buscar }}">Anterior</a>
+                    {% else %}
+                        <span style="opacity:0.4;">Anterior</span>
                     {% endif %}
 
-                {% endfor %}
+                    {% for num in page_obj.paginator.page_range %}
+                        {% if num == page_obj.number %}
+                            <span class="current">{{ num }}</span>
+                        {% elif num|add:"-1" == page_obj.number or num|add:"1" == page_obj.number %}
+                            <a href="?page={{ num }}&buscar={{ request.GET.buscar }}">{{ num }}</a>
+                        {% endif %}
+                    {% endfor %}
 
-                {% if page_obj.has_next %}
-                    <a href="?page={{ page_obj.next_page_number }}&buscar={{ request.GET.buscar }}">
-                        Siguiente
-                    </a>
-                {% else %}
-                    <span style="opacity:0.4;">Siguiente</span>
-                {% endif %}
-
+                    {% if page_obj.has_next %}
+                        <a href="?page={{ page_obj.next_page_number }}&buscar={{ request.GET.buscar }}">Siguiente</a>
+                    {% else %}
+                        <span style="opacity:0.4;">Siguiente</span>
+                    {% endif %}
+                </div>
             </div>
 
-        </div>
-
-    </section>
-
-</main>
-```
-
+        </section>
+    </main>
 </div>
-
 <script src="https://unpkg.com/feather-icons/dist/feather.min.js"></script>
-
-<script>
-    feather.replace({ 'stroke-width': 2 })
-</script>
-
+<script>feather.replace({'stroke-width': 2})</script>
 </body>
 </html>
