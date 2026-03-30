@@ -130,7 +130,7 @@ class UsuarioListView(SoloAdminMixin, ListView):
 
 class UsuarioDetalleView(SoloAdminMixin, DetailView):
     model = User
-    template_name = "users/usuario_detalle.html"
+    template_name = "users/usuarios_detalle.html"
     context_object_name = "usuario"
 
 

@@ -56,9 +56,16 @@
                     <h1>Administración de entidades</h1>
                     <p>Visualiza, edita y activa o desactiva entidades registradas en el sistema.</p>
                 </div>
+
+                <div style="display:flex; align-items:center; gap:15px;">
+                <a href="{% url 'entidad_crear' %}" class="btn-primary">
+                    + Nueva Entidad
+                </a>
+
                 <div class="page-header-logo-min">
                     <img src="{% static 'users/img/logo.png' %}" alt="PCI Cert Pro">
                 </div>
+            </div>
             </div>
 
             <!-- TABLE CONTROLS -->
