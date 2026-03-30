@@ -125,8 +125,13 @@ class UsuarioListView(SoloAdminMixin, ListView):
                 Q(last_name__icontains=search) |
                 Q(email__icontains=search)
             )
-
         return queryset
+
+
+class UsuarioDetalleView(SoloAdminMixin, DetailView):
+    model = User
+    template_name = "users/usuario_detalle.html"
+    context_object_name = "usuario"
 
 
 class UsuarioCreateView(SoloAdminMixin, CreateView):
@@ -147,6 +152,19 @@ class UsuarioDeleteView(SoloAdminMixin, DeleteView):
     model = User
     template_name = "users/usuarios_eliminar.html"
     success_url = reverse_lazy("usuarios_lista")
+
+
+# ─── Toggle Usuario ───────────────────────────────────────
+
+@login_required
+def usuario_toggle(request, pk):
+    user = get_object_or_404(User, pk=pk)
+
+    if request.user.is_superuser:
+        user.is_active = not user.is_active
+        user.save()
+
+    return redirect("usuarios_lista")
 
 
 # ─── Forms Entidades ──────────────────────────────────────
