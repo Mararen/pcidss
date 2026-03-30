@@ -107,15 +107,7 @@
                         <td>{{ entidad.email }}</td>
                         <td>{{ entidad.contacto }}</td>
                         <td>
-                            {% url 'entidad_toggle' entidad.pk as toggle_url %}
-                            <label class="switch">
-                                <input type="checkbox"
-                                       {% if entidad.is_active %}checked{% endif %}
-                                       onchange="location.href='{{ toggle_url }}'">
-                                <span class="slider"></span>
-                            </label>
-                        </td>
-                        <td>
+
                             <div class="actions">
                                 <a href="{% url 'entidad_detalle' entidad.pk %}" class="btn-icon" title="Ver">
                                     <i data-feather="eye"></i>
@@ -123,6 +115,24 @@
                                 <a href="{% url 'entidad_editar' entidad.pk %}" class="btn-icon" title="Editar">
                                     <i data-feather="edit-2"></i>
                                 </a>
+                            </div>
+
+                            <div class="actions">
+                              <a href="{% url 'entidad_detalle' entidad.pk %}" class="btn-icon" title="Ver">
+                                    <i data-feather="eye"></i>
+                              </a>
+
+                              <a href="{% url 'entidad_editar' entidad.pk %}" class="btn-icon" title="Editar">
+                                  <i data-feather="edit-2"></i>
+                               </a>
+
+                               {% url 'entidad_toggle' entidad.pk as toggle_url %}
+                              <label class="switch" title="Activar / Desactivar">
+                                 <input type="checkbox"
+                                        {% if entidad.is_active %}checked{% endif %}
+                                           onchange="location.href='{{ toggle_url }}'">
+                                   <span class="slider"></span>
+                             </label>
                             </div>
                         </td>
                     </tr>
