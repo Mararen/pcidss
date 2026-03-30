@@ -112,7 +112,7 @@ class UsuarioListView(SoloAdminMixin, ListView):
     model = User
     template_name = "users/usuarios_lista.html"
     context_object_name = "usuarios"
-    paginate_by = 10
+    paginate_by = 5
 
     def get_queryset(self):
         queryset = User.objects.all().order_by("-date_joined")
