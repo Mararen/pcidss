@@ -88,19 +88,18 @@
             <div class="page-header">
                 <div class="page-header-text">
                     <h1>Administración de usuarios y roles</h1>
-                    <p>Crea, edita o elimina usuarios, define roles con distintos niveles de acceso y gestiona la autenticación
-                    de manera centralizada para mantener el control y la trazabilidad de acciones.</p>
+                 <p>Visualiza, edita y activa o desactiva usuarios con distintos niveles de acceso.</p>
                 </div>
-                <div class="page-header-logo-min">
-                    <img src="{% static 'users/img/logo.png' %}" alt="PCI Cert Pro">
-                </div>
-            </div>
 
-            <!-- ADD BUTTON -->
-            <div style="display:flex; justify-content:flex-end; margin-bottom: 16px;">
-                <a href="{% url 'usuario_crear' %}" class="btn-add" title="Nuevo Usuario">
-                    <i data-feather="plus" style="width:20px;height:20px;stroke-width:2.5"></i>
-                </a>
+             <div style="display:flex; align-items:center; gap:15px;">
+                 <a href="{% url 'usuario_crear' %}" class="btn-circle" title="Agregar usuario">
+                        <i data-feather="plus"></i>
+                  </a>
+
+                   <div class="page-header-logo-min">
+                       <img src="{% static 'users/img/logo.png' %}" alt="PCI Cert Pro">
+                    </div>
+              </div>
             </div>
 
             <!-- TABLE CONTROLS -->
@@ -155,15 +154,21 @@
                         <td style="color: var(--text-muted);">—</td>
                         <td>
                             <div class="actions">
-                                <a href="{% url 'usuario_editar' user.pk %}" class="btn-icon" title="Ver">
-                                    <i data-feather="search" style="width:14px;height:14px"></i>
-                                </a>
-                                <a href="{% url 'usuario_editar' user.pk %}" class="btn-icon" title="Editar">
-                                    <i data-feather="edit-2" style="width:14px;height:14px"></i>
-                                </a>
-                                <a href="{% url 'usuario_eliminar' user.pk %}" class="btn-icon btn-icon-delete" title="Eliminar">
-                                    <i data-feather="trash-2" style="width:14px;height:14px"></i>
-                                </a>
+                              <a href="{% url 'usuario_detalle' user.pk %}" class="btn-icon" title="Ver">
+                                    <i data-feather="eye"></i>
+                              </a>
+
+                              <a href="{% url 'usuario_editar' user.pk %}" class="btn-icon" title="Editar">
+                                  <i data-feather="edit-2"></i>
+                               </a>
+
+                               {% url 'usuario_toggle' user.pk as toggle_url %}
+                              <label class="switch" title="Activar / Desactivar">
+                                 <input type="checkbox"
+                                        {% if user.is_active %}checked{% endif %}
+                                           onchange="location.href='{{ toggle_url }}'">
+                                   <span class="slider"></span>
+                             </label>
                             </div>
                         </td>
                     </tr>
