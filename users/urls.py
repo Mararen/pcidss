@@ -34,6 +34,24 @@ urlpatterns = [
     path('entidades/<int:pk>/editar/', views.EntidadUpdateView.as_view(), name='entidad_editar'),
     path('entidades/<int:pk>/toggle/', views.entidad_toggle, name='entidad_toggle'),
 
-    # SAQ
-    path('saq/', views.saq_view, name='saq'),
+    # ─── SAQ ────────────────────
+    path('saq/', views.saq_lista, name='saq_lista'),
+
+    # Detalle: secciones + preguntas
+    path('saq/<int:tipo_pk>/', views.saq_detalle, name='saq_detalle'),
+    path('saq/<int:tipo_pk>/seccion/<int:seccion_pk>/', views.saq_detalle, name='saq_detalle_seccion'),
+
+    # Tipo
+    path('saq/nuevo/', views.saq_tipo_crear, name='saq_tipo_crear'),
+    path('saq/<int:tipo_pk>/editar/', views.saq_tipo_editar, name='saq_tipo_editar'),
+
+    # Sección
+    path('saq/<int:tipo_pk>/seccion/nueva/', views.saq_seccion_crear, name='saq_seccion_crear'),
+    path('saq/<int:tipo_pk>/seccion/<int:seccion_pk>/editar/', views.saq_seccion_editar, name='saq_seccion_editar'),
+    path('saq/<int:tipo_pk>/seccion/<int:seccion_pk>/eliminar/', views.saq_seccion_eliminar, name='saq_seccion_eliminar'),
+
+    # Preguntas
+    path('saq/<int:tipo_pk>/seccion/<int:seccion_pk>/pregunta/nueva/', views.saq_pregunta_agregar, name='saq_pregunta_agregar'),
+    path('saq/<int:tipo_pk>/seccion/<int:seccion_pk>/pregunta/<int:pregunta_pk>/editar/', views.saq_pregunta_editar, name='saq_pregunta_editar'),
+    path('saq/<int:tipo_pk>/seccion/<int:seccion_pk>/pregunta/<int:pregunta_pk>/eliminar/', views.saq_pregunta_eliminar, name='saq_pregunta_eliminar'),
 ]

@@ -16,8 +16,9 @@ from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.tokens import default_token_generator
 from django.utils.http import urlsafe_base64_encode
 from django.utils.encoding import force_bytes
+from django.contrib import messages
 
-from .models import Entidad
+from .models import Entidad, TipoSAQ, SeccionSAQ, PreguntaSAQ, PreguntaEnSeccion
 
 
 # ─── Login / Logout ───────────────────────────────────────
@@ -245,3 +246,176 @@ def entidad_toggle(request, pk):
 @login_required
 def saq_view(request):
     return render(request, "users/saq.html")
+
+# ─── Forms SAQ ────────────────────────────────────────────────
+
+class TipoSAQForm(forms.ModelForm):
+    class Meta:
+        model = TipoSAQ
+        fields = ["nombre", "codigo", "descripcion"]
+
+
+class SeccionSAQForm(forms.ModelForm):
+    class Meta:
+        model = SeccionSAQ
+        fields = ["nombre", "orden"]
+
+
+class PreguntaSAQForm(forms.ModelForm):
+    class Meta:
+        model = PreguntaSAQ
+        fields = ["texto", "referencia_pci", "activa"]
+        widgets = {
+            "texto": forms.Textarea(attrs={"rows": 3}),
+        }
+
+
+# ─── Vistas SAQ ───────────────────────────────────────────
+
+@login_required
+def saq_lista(request):
+    """Lista todos los tipos de SAQ."""
+    tipos = TipoSAQ.objects.prefetch_related("secciones").all()
+    return render(request, "users/saq_lista.html", {"tipos": tipos})
+
+
+@login_required
+def saq_detalle(request, tipo_pk, seccion_pk=None):
+    """
+    Vista principal del SAQ.
+    Muestra las secciones de un TipoSAQ y las preguntas de la sección activa.
+    """
+    tipo     = get_object_or_404(TipoSAQ, pk=tipo_pk)
+    secciones = tipo.secciones.prefetch_related("preguntas").all()
+
+    # Sección activa: la que viene en la URL o la primera
+    if seccion_pk:
+        seccion_activa = get_object_or_404(SeccionSAQ, pk=seccion_pk, tipo_saq=tipo)
+    else:
+        seccion_activa = secciones.first()
+
+    preguntas = []
+    if seccion_activa:
+        preguntas = PreguntaEnSeccion.objects.filter(
+            seccion=seccion_activa
+        ).select_related("pregunta").order_by("orden")
+
+    return render(request, "users/saq_detalle.html", {
+        "tipo":           tipo,
+        "secciones":      secciones,
+        "seccion_activa": seccion_activa,
+        "preguntas":      preguntas,
+    })
+
+
+@login_required
+def saq_tipo_crear(request):
+    form = TipoSAQForm(request.POST or None)
+    if form.is_valid():
+        tipo = form.save()
+        messages.success(request, f"SAQ '{tipo.nombre}' creado correctamente.")
+        return redirect("saq_detalle", tipo_pk=tipo.pk)
+    return render(request, "users/saq_tipo_form.html", {"form": form})
+
+
+@login_required
+def saq_tipo_editar(request, tipo_pk):
+    tipo = get_object_or_404(TipoSAQ, pk=tipo_pk)
+    form = TipoSAQForm(request.POST or None, instance=tipo)
+    if form.is_valid():
+        form.save()
+        messages.success(request, "SAQ actualizado correctamente.")
+        return redirect("saq_detalle", tipo_pk=tipo.pk)
+    return render(request, "users/saq_tipo_form.html", {"form": form, "tipo": tipo})
+
+
+@login_required
+def saq_seccion_crear(request, tipo_pk):
+    tipo = get_object_or_404(TipoSAQ, pk=tipo_pk)
+    form = SeccionSAQForm(request.POST or None)
+    if form.is_valid():
+        seccion = form.save(commit=False)
+        seccion.tipo_saq = tipo
+        seccion.save()
+        messages.success(request, f"Sección '{seccion.nombre}' creada.")
+        return redirect("saq_detalle", tipo_pk=tipo.pk, seccion_pk=seccion.pk)
+    return render(request, "users/saq_seccion_form.html", {"form": form, "tipo": tipo})
+
+
+@login_required
+def saq_seccion_editar(request, tipo_pk, seccion_pk):
+    tipo    = get_object_or_404(TipoSAQ, pk=tipo_pk)
+    seccion = get_object_or_404(SeccionSAQ, pk=seccion_pk, tipo_saq=tipo)
+    form    = SeccionSAQForm(request.POST or None, instance=seccion)
+    if form.is_valid():
+        form.save()
+        messages.success(request, "Sección actualizada.")
+        return redirect("saq_detalle", tipo_pk=tipo.pk, seccion_pk=seccion.pk)
+    return render(request, "users/saq_seccion_form.html", {
+        "form": form, "tipo": tipo, "seccion": seccion
+    })
+
+
+@login_required
+def saq_seccion_eliminar(request, tipo_pk, seccion_pk):
+    tipo    = get_object_or_404(TipoSAQ, pk=tipo_pk)
+    seccion = get_object_or_404(SeccionSAQ, pk=seccion_pk, tipo_saq=tipo)
+    if request.method == "POST":
+        seccion.delete()
+        messages.success(request, "Sección eliminada.")
+        return redirect("saq_detalle", tipo_pk=tipo.pk)
+    return render(request, "users/saq_seccion_eliminar.html", {
+        "tipo": tipo, "seccion": seccion
+    })
+
+
+@login_required
+def saq_pregunta_agregar(request, tipo_pk, seccion_pk):
+    """Crea una nueva pregunta y la agrega a la sección."""
+    tipo    = get_object_or_404(TipoSAQ, pk=tipo_pk)
+    seccion = get_object_or_404(SeccionSAQ, pk=seccion_pk, tipo_saq=tipo)
+    form    = PreguntaSAQForm(request.POST or None)
+    if form.is_valid():
+        pregunta = form.save()
+        ultimo_orden = PreguntaEnSeccion.objects.filter(
+            seccion=seccion
+        ).count()
+        PreguntaEnSeccion.objects.create(
+            pregunta=pregunta,
+            seccion=seccion,
+            orden=ultimo_orden + 1
+        )
+        messages.success(request, "Pregunta agregada.")
+        return redirect("saq_detalle", tipo_pk=tipo.pk, seccion_pk=seccion.pk)
+    return render(request, "users/saq_pregunta_form.html", {
+        "form": form, "tipo": tipo, "seccion": seccion
+    })
+
+
+@login_required
+def saq_pregunta_editar(request, tipo_pk, seccion_pk, pregunta_pk):
+    tipo     = get_object_or_404(TipoSAQ, pk=tipo_pk)
+    seccion  = get_object_or_404(SeccionSAQ, pk=seccion_pk, tipo_saq=tipo)
+    pregunta = get_object_or_404(PreguntaSAQ, pk=pregunta_pk)
+    form     = PreguntaSAQForm(request.POST or None, instance=pregunta)
+    if form.is_valid():
+        form.save()
+        messages.success(request, "Pregunta actualizada.")
+        return redirect("saq_detalle", tipo_pk=tipo.pk, seccion_pk=seccion.pk)
+    return render(request, "users/saq_pregunta_form.html", {
+        "form": form, "tipo": tipo, "seccion": seccion, "pregunta": pregunta
+    })
+
+
+@login_required
+def saq_pregunta_eliminar(request, tipo_pk, seccion_pk, pregunta_pk):
+    tipo     = get_object_or_404(TipoSAQ, pk=tipo_pk)
+    seccion  = get_object_or_404(SeccionSAQ, pk=seccion_pk, tipo_saq=tipo)
+    entrada  = get_object_or_404(PreguntaEnSeccion, pregunta_id=pregunta_pk, seccion=seccion)
+    if request.method == "POST":
+        entrada.delete()
+        messages.success(request, "Pregunta eliminada de la sección.")
+        return redirect("saq_detalle", tipo_pk=tipo.pk, seccion_pk=seccion.pk)
+    return render(request, "users/saq_pregunta_eliminar.html", {
+        "tipo": tipo, "seccion": seccion, "entrada": entrada
+    })
