@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <title>SAQ | PCI Cert Pro</title>
-    <link rel="stylesheet" href="{% static 'users/css/dashboard.css' %}">
+    <link rel="stylesheet" href="{% static 'users/css/main.css' %}">
 </head>
 <body>
 <div class="layout">
@@ -37,11 +37,13 @@
                 <a href="#">Configuración</a>
                 <a href="#">Ayuda</a>
             </nav>
-            <div class="topbar-search">
-                <i data-feather="search" style="width:14px;height:14px;stroke:rgba(255,255,255,0.7)"></i>
-                <input type="text" placeholder="Buscar...">
+            <div class="topbar-right">
+                <div class="topbar-search">
+                    <i data-feather="search"></i>
+                    <input type="text" placeholder="Buscar...">
+                </div>
+                <div class="topbar-lang">Eng ▾</div>
             </div>
-            <div class="topbar-lang">Eng ▾</div>
         </header>
 
         <section class="content">
@@ -51,8 +53,8 @@
                     <h1>Cuestionarios SAQ</h1>
                     <p>Selecciona un tipo de SAQ para administrar sus secciones y preguntas.</p>
                 </div>
-                <div class="page-header-pcilogo">
-                    <img src="{% static 'users/img/pcilogo.png' %}" alt="PCI Cert Pro">
+                <div class="page-header-logo-min">
+                    <img src="{% static 'users/img/logo.png' %}" alt="PCI Cert Pro">
                 </div>
             </div>
 

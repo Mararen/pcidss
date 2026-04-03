@@ -4,8 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <title>{{ tipo.nombre }} | PCI Cert Pro</title>
-    <link rel="stylesheet" href="{% static 'users/css/dashboard.css' %}">
-    <link rel="stylesheet" href="{% static 'users/css/saq.css' %}">
+    <link rel="stylesheet" href="{% static 'users/css/main.css' %}">
 </head>
 <body>
 <div class="layout">
@@ -38,11 +37,13 @@
                 <a href="#">Configuración</a>
                 <a href="#">Ayuda</a>
             </nav>
-            <div class="topbar-search">
-                <i data-feather="search" style="width:14px;height:14px;stroke:rgba(255,255,255,0.7)"></i>
-                <input type="text" placeholder="Buscar...">
+            <div class="topbar-right">
+                <div class="topbar-search">
+                    <i data-feather="search"></i>
+                    <input type="text" placeholder="Buscar...">
+                </div>
+                <div class="topbar-lang">Eng ▾</div>
             </div>
-            <div class="topbar-lang">Eng ▾</div>
         </header>
 
         <section class="content saq-content">
@@ -63,7 +64,7 @@
                         <i data-feather="edit-2" style="width:13px;height:13px;vertical-align:middle;margin-right:4px;"></i>
                         Editar SAQ
                     </a>
-                    <div class="page-header-pcilogo">
+                    <div class="page-header-logo-min">
                         <img src="{% static 'users/img/pcilogo.png' %}" alt="PCI Cert Pro">
                     </div>
                 </div>

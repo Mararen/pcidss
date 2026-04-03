@@ -1,5 +1,3 @@
-# Imports
-
 import os
 import requests
 
@@ -7,16 +5,16 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
-from django.contrib.auth.mixins import UserPassesTestMixin, LoginRequiredMixin
-from django.views.generic import ListView, CreateView, UpdateView, DeleteView, DetailView
-from django.urls import reverse_lazy
-from django.db.models import Q
-from django import forms
+from django.contrib.auth.mixins import UserPassesTestMixin
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.tokens import default_token_generator
+from django.contrib import messages
+from django.views.generic import ListView, DetailView, CreateView, UpdateView
+from django.urls import reverse_lazy
+from django.db.models import Q
 from django.utils.http import urlsafe_base64_encode
 from django.utils.encoding import force_bytes
-from django.contrib import messages
+from django import forms
 
 from .models import Entidad, TipoSAQ, SeccionSAQ, PreguntaSAQ, PreguntaEnSeccion
 
@@ -27,17 +25,12 @@ def login_view(request):
     if request.method == "POST":
         username = request.POST.get("username")
         password = request.POST.get("password")
-
         user = authenticate(request, username=username, password=password)
-
         if user is not None:
             login(request, user)
             return redirect("dashboard")
         else:
-            return render(request, "users/login.html", {
-                "error": "Credenciales incorrectas"
-            })
-
+            return render(request, "users/login.html", {"error": "Credenciales incorrectas"})
     return render(request, "users/login.html")
 
 
@@ -55,16 +48,13 @@ def logout_view(request):
 
 def forgot_password(request):
     message = None
-
     if request.method == 'POST':
         email = request.POST.get('email')
         try:
             user = User.objects.get(email=email)
             token = default_token_generator.make_token(user)
             uid = urlsafe_base64_encode(force_bytes(user.pk))
-            reset_link = request.build_absolute_uri(
-                f'/reset-password/{uid}/{token}/'
-            )
+            reset_link = request.build_absolute_uri(f'/reset-password/{uid}/{token}/')
             requests.post(
                 'https://api.brevo.com/v3/smtp/email',
                 headers={
@@ -79,10 +69,8 @@ def forgot_password(request):
                 }
             )
         except User.DoesNotExist:
-            pass  
-
+            pass
         message = 'Si ese correo está registrado, recibirás un enlace en breve.'
-
     return render(request, 'users/forgot_password.html', {'message': message})
 
 
@@ -93,7 +81,9 @@ class SoloAdminMixin(UserPassesTestMixin):
         return self.request.user.is_superuser
 
 
-# ─── Forms Usuarios ───────────────────────────────────────
+# ═══════════════════════════════════════════════════════════
+# USUARIOS
+# ═══════════════════════════════════════════════════════════
 
 class UsuarioCreateForm(UserCreationForm):
     class Meta:
@@ -107,18 +97,15 @@ class UsuarioUpdateForm(forms.ModelForm):
         fields = ["username", "first_name", "last_name", "email", "is_active"]
 
 
-# ─── CRUD Usuarios ────────────────────────────────────────
-
 class UsuarioListView(SoloAdminMixin, ListView):
     model = User
     template_name = "users/usuarios_lista.html"
     context_object_name = "usuarios"
-    paginate_by = 5
+    paginate_by = 10
 
     def get_queryset(self):
         queryset = User.objects.all().order_by("-date_joined")
         search = self.request.GET.get("buscar")
-
         if search:
             queryset = queryset.filter(
                 Q(username__icontains=search) |
@@ -131,7 +118,7 @@ class UsuarioListView(SoloAdminMixin, ListView):
 
 class UsuarioDetalleView(SoloAdminMixin, DetailView):
     model = User
-    template_name = "users/usuarios_detalle.html"
+    template_name = "users/usuario_detalle.html"
     context_object_name = "usuario"
 
 
@@ -149,41 +136,24 @@ class UsuarioUpdateView(SoloAdminMixin, UpdateView):
     success_url = reverse_lazy("usuarios_lista")
 
 
-class UsuarioDeleteView(SoloAdminMixin, DeleteView):
-    model = User
-    template_name = "users/usuarios_eliminar.html"
-    success_url = reverse_lazy("usuarios_lista")
-
-
-# ─── Toggle Usuario ───────────────────────────────────────
-
 @login_required
 def usuario_toggle(request, pk):
-    user = get_object_or_404(User, pk=pk)
-
+    usuario = get_object_or_404(User, pk=pk)
     if request.user.is_superuser:
-        user.is_active = not user.is_active
-        user.save()
-
+        usuario.is_active = not usuario.is_active
+        usuario.save()
     return redirect("usuarios_lista")
 
 
-# ─── Forms Entidades ──────────────────────────────────────
+# ═══════════════════════════════════════════════════════════
+# ENTIDADES
+# ═══════════════════════════════════════════════════════════
 
 class EntidadForm(forms.ModelForm):
     class Meta:
         model = Entidad
-        fields = [
-            "usuario",
-            "nombre_empresa",
-            "dba",
-            "email",
-            "sitio_web",
-            "contacto",
-        ]
+        fields = ["usuario", "nombre_empresa", "dba", "email", "sitio_web", "contacto"]
 
-
-# ─── CRUD Entidades ───────────────────────────────────────
 
 class EntidadListView(SoloAdminMixin, ListView):
     model = Entidad
@@ -194,7 +164,6 @@ class EntidadListView(SoloAdminMixin, ListView):
     def get_queryset(self):
         queryset = Entidad.objects.select_related("usuario").order_by("-fecha_modificacion")
         search = self.request.GET.get("buscar")
-
         if search:
             queryset = queryset.filter(
                 Q(nombre_empresa__icontains=search) |
@@ -202,8 +171,13 @@ class EntidadListView(SoloAdminMixin, ListView):
                 Q(email__icontains=search) |
                 Q(contacto__icontains=search)
             )
-
         return queryset
+
+
+class EntidadDetalleView(SoloAdminMixin, DetailView):
+    model = Entidad
+    template_name = "users/entidad_detalle.html"
+    context_object_name = "entidad"
 
 
 class EntidadCreateView(SoloAdminMixin, CreateView):
@@ -220,34 +194,18 @@ class EntidadUpdateView(SoloAdminMixin, UpdateView):
     success_url = reverse_lazy("entidades_lista")
 
 
-# ─── Detalle Entidad ──────────────────────────────────────
-
-class EntidadDetalleView(SoloAdminMixin, DetailView):
-    model = Entidad
-    template_name = "users/entidad_detalle.html"
-    context_object_name = "entidad"
-
-
-# ─── Toggle Activo Entidad ────────────────────────────────
-
 @login_required
 def entidad_toggle(request, pk):
     entidad = get_object_or_404(Entidad, pk=pk)
-
     if request.user.is_superuser:
         entidad.is_active = not entidad.is_active
         entidad.save()
-
     return redirect("entidades_lista")
 
 
-# ─── SAQ ──────────────────────────────────────────────────
-
-@login_required
-def saq_view(request):
-    return render(request, "users/saq.html")
-
-# ─── Forms SAQ ────────────────────────────────────────────────
+# ═══════════════════════════════════════════════════════════
+# SAQ
+# ═══════════════════════════════════════════════════════════
 
 class TipoSAQForm(forms.ModelForm):
     class Meta:
@@ -270,25 +228,17 @@ class PreguntaSAQForm(forms.ModelForm):
         }
 
 
-# ─── Vistas SAQ ───────────────────────────────────────────
-
 @login_required
 def saq_lista(request):
-    """Lista todos los tipos de SAQ."""
     tipos = TipoSAQ.objects.prefetch_related("secciones").all()
     return render(request, "users/saq_lista.html", {"tipos": tipos})
 
 
 @login_required
 def saq_detalle(request, tipo_pk, seccion_pk=None):
-    """
-    Vista principal del SAQ.
-    Muestra las secciones de un TipoSAQ y las preguntas de la sección activa.
-    """
-    tipo     = get_object_or_404(TipoSAQ, pk=tipo_pk)
+    tipo      = get_object_or_404(TipoSAQ, pk=tipo_pk)
     secciones = tipo.secciones.prefetch_related("preguntas").all()
 
-    # Sección activa: la que viene en la URL o la primera
     if seccion_pk:
         seccion_activa = get_object_or_404(SeccionSAQ, pk=seccion_pk, tipo_saq=tipo)
     else:
@@ -338,7 +288,7 @@ def saq_seccion_crear(request, tipo_pk):
         seccion.tipo_saq = tipo
         seccion.save()
         messages.success(request, f"Sección '{seccion.nombre}' creada.")
-        return redirect("saq_detalle", tipo_pk=tipo.pk, seccion_pk=seccion.pk)
+        return redirect("saq_detalle_seccion", tipo_pk=tipo.pk, seccion_pk=seccion.pk)
     return render(request, "users/saq_seccion_form.html", {"form": form, "tipo": tipo})
 
 
@@ -350,7 +300,7 @@ def saq_seccion_editar(request, tipo_pk, seccion_pk):
     if form.is_valid():
         form.save()
         messages.success(request, "Sección actualizada.")
-        return redirect("saq_detalle", tipo_pk=tipo.pk, seccion_pk=seccion.pk)
+        return redirect("saq_detalle_seccion", tipo_pk=tipo.pk, seccion_pk=seccion.pk)
     return render(request, "users/saq_seccion_form.html", {
         "form": form, "tipo": tipo, "seccion": seccion
     })
@@ -371,22 +321,17 @@ def saq_seccion_eliminar(request, tipo_pk, seccion_pk):
 
 @login_required
 def saq_pregunta_agregar(request, tipo_pk, seccion_pk):
-    """Crea una nueva pregunta y la agrega a la sección."""
     tipo    = get_object_or_404(TipoSAQ, pk=tipo_pk)
     seccion = get_object_or_404(SeccionSAQ, pk=seccion_pk, tipo_saq=tipo)
     form    = PreguntaSAQForm(request.POST or None)
     if form.is_valid():
         pregunta = form.save()
-        ultimo_orden = PreguntaEnSeccion.objects.filter(
-            seccion=seccion
-        ).count()
+        ultimo_orden = PreguntaEnSeccion.objects.filter(seccion=seccion).count()
         PreguntaEnSeccion.objects.create(
-            pregunta=pregunta,
-            seccion=seccion,
-            orden=ultimo_orden + 1
+            pregunta=pregunta, seccion=seccion, orden=ultimo_orden + 1
         )
         messages.success(request, "Pregunta agregada.")
-        return redirect("saq_detalle", tipo_pk=tipo.pk, seccion_pk=seccion.pk)
+        return redirect("saq_detalle_seccion", tipo_pk=tipo.pk, seccion_pk=seccion.pk)
     return render(request, "users/saq_pregunta_form.html", {
         "form": form, "tipo": tipo, "seccion": seccion
     })
@@ -401,7 +346,7 @@ def saq_pregunta_editar(request, tipo_pk, seccion_pk, pregunta_pk):
     if form.is_valid():
         form.save()
         messages.success(request, "Pregunta actualizada.")
-        return redirect("saq_detalle", tipo_pk=tipo.pk, seccion_pk=seccion.pk)
+        return redirect("saq_detalle_seccion", tipo_pk=tipo.pk, seccion_pk=seccion.pk)
     return render(request, "users/saq_pregunta_form.html", {
         "form": form, "tipo": tipo, "seccion": seccion, "pregunta": pregunta
     })
@@ -409,13 +354,13 @@ def saq_pregunta_editar(request, tipo_pk, seccion_pk, pregunta_pk):
 
 @login_required
 def saq_pregunta_eliminar(request, tipo_pk, seccion_pk, pregunta_pk):
-    tipo     = get_object_or_404(TipoSAQ, pk=tipo_pk)
-    seccion  = get_object_or_404(SeccionSAQ, pk=seccion_pk, tipo_saq=tipo)
-    entrada  = get_object_or_404(PreguntaEnSeccion, pregunta_id=pregunta_pk, seccion=seccion)
+    tipo    = get_object_or_404(TipoSAQ, pk=tipo_pk)
+    seccion = get_object_or_404(SeccionSAQ, pk=seccion_pk, tipo_saq=tipo)
+    entrada = get_object_or_404(PreguntaEnSeccion, pregunta_id=pregunta_pk, seccion=seccion)
     if request.method == "POST":
         entrada.delete()
         messages.success(request, "Pregunta eliminada de la sección.")
-        return redirect("saq_detalle", tipo_pk=tipo.pk, seccion_pk=seccion.pk)
+        return redirect("saq_detalle_seccion", tipo_pk=tipo.pk, seccion_pk=seccion.pk)
     return render(request, "users/saq_pregunta_eliminar.html", {
         "tipo": tipo, "seccion": seccion, "entrada": entrada
     })
