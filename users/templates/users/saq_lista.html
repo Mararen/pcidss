@@ -13,37 +13,89 @@
     <!-- SIDEBAR -->
     <aside class="sidebar">
         <div class="profile">
-            <img src="{% static 'users/img/profile.png' %}">
-            <h4>{{ request.user.username }}</h4>
+            <img src="{% static 'users/img/profile.png' %}" alt="Perfil">
+            <h4>{{ request.user.get_full_name|default:request.user.username }}</h4>
+            <p>
+                {% if request.user.is_superuser %}
+                    Administrador Global
+                {% else %}
+                    {{ request.user.groups.first.name|default:"Usuario" }}
+                {% endif %}
+            </p>
         </div>
 
         <nav class="menu">
-            <a href="{% url 'dashboard' %}">Dashboard</a>
-            <a href="{% url 'usuarios_lista' %}">Usuarios</a>
-            <a href="{% url 'entidades_lista' %}">Entidades</a>
-            <a href="{% url 'saq_lista' %}" class="active">SAQ</a>
-            <a href="{% url 'logout' %}">Salir</a>
+            <a href="{% url 'dashboard' %}"><i data-feather="grid"></i> Dashboard</a>
+            <a href="{% url 'usuarios_lista' %}"><i data-feather="users"></i> Usuarios</a>
+            <a href="{% url 'entidades_lista' %}"><i data-feather="home"></i> Entidades</a>
+            <a href="{% url 'saq_lista' %}" class="active"><i data-feather="file-text"></i> SAQ</a>
+            <a href="#"><i data-feather="check-square"></i> Pre-Test</a>
+            <a href="#"><i data-feather="paperclip"></i> Evidencias</a>
+            <a href="#"><i data-feather="star"></i> Renovación</a>
+            <a href="{% url 'logout' %}" class="logout"><i data-feather="log-out"></i> Cerrar Sesión</a>
         </nav>
     </aside>
 
     <!-- MAIN -->
     <main class="main-content">
 
+        <!-- TOPBAR -->
         <header class="topbar">
-            <h2>Tipos de SAQ</h2>
+            <nav class="topbar-nav">
+                <a href="{% url 'dashboard' %}">Dashboard</a>
+                <a href="#">Catálogos</a>
+                <a href="#">Configuración</a>
+                <a href="#">Ayuda</a>
+            </nav>
+
+            <div class="topbar-right">
+                <div class="topbar-search">
+                    <i data-feather="search"></i>
+                    <input type="text" placeholder="Buscar...">
+                </div>
+                <div class="topbar-lang">Eng ▾</div>
+            </div>
         </header>
 
         <section class="content">
 
-            <div class="saq-tipo-grid">
+            <!-- HEADER -->
+            <div class="page-header">
+                <div class="page-header-text">
+                    <h1>Tipos de SAQ</h1>
+                    <p>Selecciona un tipo de SAQ para administrar sus secciones y preguntas.</p>
+                </div>
+
+                <div class="page-header-logo-min">
+                    <img src="{% static 'users/img/logo.png' %}">
+                </div>
+            </div>
+
+            <!-- GRID DE TARJETAS -->
+            <div class="card-grid">
 
                 {% for tipo in tipos %}
-                    <a href="{% url 'saq_editor' tipo.pk %}" class="saq-tipo-card">
-                        <h3>{{ tipo.nombre }}</h3>
-                        <p>{{ tipo.secciones.count }} secciones</p>
+                    <a href="{% url 'saq_detalle' tipo.pk %}" style="text-decoration:none; color:inherit;">
+                        <div class="card">
+
+                            <div class="card-header">
+                                <h3>{{ tipo.nombre }}</h3>
+                            </div>
+
+                            <div class="detail-row">
+                                <span class="label">Secciones</span>
+                                <span class="value">
+                                    {{ tipo.secciones.count }}
+                                </span>
+                            </div>
+
+                        </div>
                     </a>
+
                 {% empty %}
-                    <p>No hay SAQ creados</p>
+                    <div class="card">
+                        <p>No hay SAQ creados.</p>
+                    </div>
                 {% endfor %}
 
             </div>
@@ -52,6 +104,9 @@
 
     </main>
 </div>
+
+<script src="https://unpkg.com/feather-icons/dist/feather.min.js"></script>
+<script>feather.replace({'stroke-width': 2})</script>
 
 </body>
 </html>

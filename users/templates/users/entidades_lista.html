@@ -13,8 +13,15 @@
         <div class="profile">
             <img src="{% static 'users/img/profile.png' %}" alt="Perfil">
             <h4>{{ request.user.get_full_name|default:request.user.username }}</h4>
-            <p>Administrador Global</p>
+            <p>
+                {% if request.user.is_superuser %}
+                    Administrador Global
+                {% else %}
+                    {{ request.user.groups.first.name|default:"Usuario" }}
+                {% endif %}
+            </p>
         </div>
+
         <nav class="menu">
             <a href="{% url 'dashboard' %}"><i data-feather="grid"></i> Dashboard</a>
             <a href="{% url 'usuarios_lista' %}"><i data-feather="users"></i> Usuarios</a>
@@ -47,6 +54,7 @@
 
         <section class="content">
 
+            <!-- HEADER -->
             <div class="page-header">
                 <div class="page-header-text">
                     <h1>Administración de entidades</h1>
@@ -63,95 +71,87 @@
                 </div>
             </div>
 
-            <div class="card">
+            <!-- CONTROLES -->
+            <div class="table-controls">
+                <div class="table-controls-left">
+                    <form method="get">
+                        <input 
+                            type="text" 
+                            name="buscar" 
+                            placeholder="Buscar entidad..." 
+                            value="{{ request.GET.buscar }}"
+                        >
+                    </form>
+                </div>
+            </div>
 
-    <div class="card-header" style="display:flex; justify-content:space-between; align-items:center;">
-        <h3>Listado de entidades</h3>
+            <!-- TABLA -->
+            <table class="modern-table">
+                <thead>
+                    <tr>
+                        <td>Empresa</td>
+                        <td>DBA</td>
+                        <td>Email</td>
+                        <td>Contacto</td>
+                        <td>Estado</td>
+                        <td>Acciones</td>
+                    </tr>
+                </thead>
 
-        <form method="get" style="display:flex; gap:10px;">
-            <input 
-                type="text" 
-                name="buscar" 
-                placeholder="Buscar entidad..." 
-                value="{{ request.GET.buscar }}"
-                class="input"
-            >
-            <button type="submit" class="btn-secondary">Buscar</button>
-        </form>
-    </div>
+                <tbody>
+                    {% for entidad in entidades %}
+                    <tr>
+                        <td>{{ entidad.nombre_empresa }}</td>
+                        <td>{{ entidad.dba }}</td>
+                        <td>{{ entidad.email }}</td>
+                        <td>{{ entidad.contacto }}</td>
 
-    <div class="card-body">
-
-        <table class="table">
-            <thead>
-                <tr>
-                    <th>Empresa</th>
-                    <th>DBA</th>
-                    <th>Email</th>
-                    <th>Contacto</th>
-                    <th>Estado</th>
-                    <th>Acciones</th>
-                </tr>
-            </thead>
-
-            <tbody>
-                {% for entidad in entidades %}
-                <tr>
-                    <td>{{ entidad.nombre_empresa }}</td>
-                    <td>{{ entidad.dba }}</td>
-                    <td>{{ entidad.email }}</td>
-                    <td>{{ entidad.contacto }}</td>
-
-                    <td>
-                        {% if entidad.is_active %}
-                            <span class="badge badge-success">Activa</span>
-                        {% else %}
-                            <span class="badge badge-danger">Inactiva</span>
-                        {% endif %}
-                    </td>
-
-                    <td style="display:flex; gap:10px;">
-                        <a href="{% url 'entidad_editar' entidad.pk %}" class="btn-small">
-                            Editar
-                        </a>
-
-                        <a href="{% url 'entidad_toggle' entidad.pk %}" class="btn-small">
+                        <td>
                             {% if entidad.is_active %}
-                                Desactivar
+                                <span class="badge badge-success">Activa</span>
                             {% else %}
-                                Activar
+                                <span class="badge badge-danger">Inactiva</span>
                             {% endif %}
-                        </a>
-                    </td>
-                </tr>
-                {% empty %}
-                <tr>
-                    <td colspan="6" style="text-align:center;">
-                        No hay entidades registradas.
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+                        </td>
 
-    </div>
+                        <td>
+                            <div class="actions">
+                                <a href="{% url 'entidad_editar' entidad.pk %}" class="btn-icon">
+                                    <i data-feather="edit"></i>
+                                </a>
 
-    <!-- Paginación -->
-    <div class="card-footer" style="display:flex; justify-content:center; gap:10px;">
-        {% if is_paginated %}
-            {% if page_obj.has_previous %}
-                <a href="?page={{ page_obj.previous_page_number }}" class="btn-small">Anterior</a>
-            {% endif %}
+                                <a href="{% url 'entidad_toggle' entidad.pk %}" class="btn-icon danger">
+                                    <i data-feather="power"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6">No hay entidades registradas.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
 
-            <span>Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span>
+            <!-- PAGINACIÓN -->
+            <div class="pagination">
+                <div>
+                    Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}
+                </div>
 
-            {% if page_obj.has_next %}
-                <a href="?page={{ page_obj.next_page_number }}" class="btn-small">Siguiente</a>
-            {% endif %}
-        {% endif %}
-    </div>
+                <div class="pagination-controls">
+                    {% if page_obj.has_previous %}
+                        <a href="?page={{ page_obj.previous_page_number }}">Anterior</a>
+                    {% endif %}
 
-</div>
+                    <span class="current">{{ page_obj.number }}</span>
+
+                    {% if page_obj.has_next %}
+                        <a href="?page={{ page_obj.next_page_number }}">Siguiente</a>
+                    {% endif %}
+                </div>
+            </div>
 
         </section>
     </main>

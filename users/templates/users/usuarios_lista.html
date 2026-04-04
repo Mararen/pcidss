@@ -3,38 +3,156 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Usuarios</title>
+    <title>Usuarios | PCI Cert Pro</title>
     <link rel="stylesheet" href="{% static 'users/css/main.css' %}">
 </head>
 <body>
-
 <div class="layout">
 
-<aside class="sidebar">
-    <nav class="menu">
-        <a href="{% url 'dashboard' %}">Dashboard</a>
-        <a href="{% url 'usuarios_lista' %}" class="active">Usuarios</a>
-        <a href="{% url 'entidades_lista' %}">Entidades</a>
-        <a href="{% url 'saq_lista' %}">SAQ</a>
-    </nav>
-</aside>
+    <aside class="sidebar">
+        <div class="profile">
+            <img src="{% static 'users/img/profile.png' %}" alt="Perfil">
+            <h4>{{ request.user.get_full_name|default:request.user.username }}</h4>
+            <p>
+    {% if request.user.is_superuser %}
+        Administrador Global
+    {% else %}
+        {{ request.user.groups.first.name|default:"Usuario" }}
+    {% endif %}
+            </p>
+        </div>
+        <nav class="menu">
+            <a href="{% url 'dashboard' %}"><i data-feather="grid"></i> Dashboard</a>
+            <a href="{% url 'usuarios_lista' %}" class="active"><i data-feather="users"></i> Usuarios</a>
+            <a href="{% url 'entidades_lista' %}"><i data-feather="home"></i> Entidades</a>
+            <a href="{% url 'saq_lista' %}"><i data-feather="file-text"></i> SAQ</a>
+            <a href="#"><i data-feather="check-square"></i> Pre-Test</a>
+            <a href="#"><i data-feather="paperclip"></i> Evidencias</a>
+            <a href="#"><i data-feather="star"></i> Renovación</a>
+            <a href="{% url 'logout' %}" class="logout"><i data-feather="log-out"></i> Cerrar Sesión</a>
+        </nav>
+    </aside>
 
-<main class="main-content">
+    <main class="main-content">
 
-<h1>Usuarios</h1>
+        <header class="topbar">
+            <nav class="topbar-nav">
+                <a href="{% url 'dashboard' %}">Dashboard</a>
+                <a href="#">Catálogos</a>
+                <a href="#">Configuración</a>
+                <a href="#">Ayuda</a>
+            </nav>
+            <div class="topbar-right">
+                <div class="topbar-search">
+                    <i data-feather="search"></i>
+                    <input type="text" placeholder="Buscar...">
+                </div>
+                <div class="topbar-lang">Eng ▾</div>
+            </div>
+        </header>
 
-<table>
-{% for user in usuarios %}
-<tr>
-<td>{{ user.username }}</td>
-<td>
-<a href="{% url 'usuario_detalle' user.pk %}">Ver</a>
-</td>
-</tr>
-{% endfor %}
-</table>
+        <section class="content">
 
-</main>
+            <!-- HEADER -->
+            <div class="page-header">
+                <div class="page-header-text">
+                    <h1>Administración de usuarios</h1>
+                    <p>Gestiona usuarios del sistema, edita su información y controla su estado.</p>
+                </div>
+
+                <div style="display:flex; align-items:center; gap:15px;">
+                    <a href="{% url 'usuario_crear' %}" class="btn-primary">
+                        + Nuevo Usuario
+                    </a>
+                    <div class="page-header-logo-min">
+                        <img src="{% static 'users/img/logo.png' %}">
+                    </div>
+                </div>
+            </div>
+
+            <!-- CONTROLES -->
+            <div class="table-controls">
+                <div class="table-controls-left">
+                    <form method="get">
+                        <input type="text" name="buscar" value="{{ request.GET.buscar }}" placeholder="Buscar usuario...">
+                    </form>
+                </div>
+            </div>
+
+            <!-- TABLA -->
+            <table class="modern-table">
+                <thead>
+                    <tr>
+                        <td>Usuario</td>
+                        <td>Nombre</td>
+                        <td>Email</td>
+                        <td>Estado</td>
+                        <td>Acciones</td>
+                    </tr>
+                </thead>
+                <tbody>
+                {% for user in usuarios %}
+                    <tr>
+                        <td>{{ user.username }}</td>
+                        <td>{{ user.get_full_name }}</td>
+                        <td>{{ user.email }}</td>
+
+                        <td>
+                            {% if user.is_active %}
+                                <span class="badge badge-success">Activo</span>
+                            {% else %}
+                                <span class="badge badge-danger">Inactivo</span>
+                            {% endif %}
+                        </td>
+
+                        <td>
+                            <div class="actions">
+                                <a href="{% url 'usuario_detalle' user.pk %}" class="btn-icon">
+                                    <i data-feather="eye"></i>
+                                </a>
+
+                                <a href="{% url 'usuario_editar' user.pk %}" class="btn-icon">
+                                    <i data-feather="edit"></i>
+                                </a>
+
+                                <a href="{% url 'usuario_toggle' user.pk %}" class="btn-icon danger">
+                                    <i data-feather="power"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                {% empty %}
+                    <tr>
+                        <td colspan="5">No hay usuarios registrados.</td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+
+            <!-- PAGINACIÓN -->
+            <div class="pagination">
+                <div>
+                    Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}
+                </div>
+
+                <div class="pagination-controls">
+                    {% if page_obj.has_previous %}
+                        <a href="?page={{ page_obj.previous_page_number }}">Anterior</a>
+                    {% endif %}
+
+                    <span class="current">{{ page_obj.number }}</span>
+
+                    {% if page_obj.has_next %}
+                        <a href="?page={{ page_obj.next_page_number }}">Siguiente</a>
+                    {% endif %}
+                </div>
+            </div>
+
+        </section>
+    </main>
 </div>
+
+<script src="https://unpkg.com/feather-icons/dist/feather.min.js"></script>
+<script>feather.replace({'stroke-width': 2})</script>
 </body>
 </html>
