@@ -3,116 +3,15 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>{{ usuario.username }} | PCI Cert Pro</title>
-    <link rel="stylesheet" href="{% static 'users/css/main.css' %}">
+    <title>{{ usuario.username }}</title>
 </head>
 <body>
-<div class="layout">
 
-    <aside class="sidebar">
-        <div class="profile">
-            <img src="{% static 'users/img/profile.png' %}" alt="Perfil">
-            <h4>{{ request.user.get_full_name|default:request.user.username }}</h4>
-            <p>Administrador Global</p>
-        </div>
-        <nav class="menu">
-            <a href="{% url 'dashboard' %}"><i data-feather="grid"></i> Dashboard</a>
-            <a href="{% url 'usuarios_lista' %}" class="active"><i data-feather="users"></i> Usuarios</a>
-            <a href="{% url 'entidades_lista' %}"><i data-feather="home"></i> Entidades</a>
-            <a href="{% url 'saq_lista' %}"><i data-feather="file-text"></i> SAQ</a>
-            <a href="#"><i data-feather="check-square"></i> Pre-Test</a>
-            <a href="#"><i data-feather="paperclip"></i> Evidencias</a>
-            <a href="#"><i data-feather="star"></i> Renovación</a>
-            <a href="{% url 'logout' %}" class="logout"><i data-feather="log-out"></i> Cerrar Sesión</a>
-        </nav>
-    </aside>
+<h1>{{ usuario.username }}</h1>
 
-    <main class="main-content">
+<p>Email: {{ usuario.email }}</p>
 
-        <header class="topbar">
-            <nav class="topbar-nav">
-                <a href="{% url 'dashboard' %}">Dashboard</a>
-                <a href="#">Catálogos</a>
-                <a href="#">Configuración</a>
-                <a href="#">Ayuda</a>
-            </nav>
-            <div class="topbar-right">
-                <div class="topbar-search">
-                    <i data-feather="search"></i>
-                    <input type="text" placeholder="Buscar...">
-                </div>
-                <div class="topbar-lang">Eng ▾</div>
-            </div>
-        </header>
+<a href="{% url 'usuario_editar' usuario.pk %}">Editar</a>
 
-        <section class="content">
-
-            <div class="page-header">
-                <div class="page-header-text">
-                    <h1>Detalle de Usuario</h1>
-                    <p>Información del usuario <strong>{{ usuario.username }}</strong>.</p>
-                </div>
-                <div style="display:flex; align-items:center; gap:10px;">
-                    <a href="{% url 'usuario_editar' usuario.pk %}" class="btn-primary">
-                        <i data-feather="edit-2" style="width:13px;height:13px;vertical-align:middle;margin-right:4px;"></i>
-                        Editar
-                    </a>
-                    {% url 'usuario_toggle' usuario.pk as toggle_url %}
-                    <a href="{{ toggle_url }}" class="btn-secondary">
-                        {% if usuario.is_active %}Desactivar{% else %}Activar{% endif %}
-                    </a>
-                    <div class="page-header-logo-min">
-                        <img src="{% static 'users/img/logo.png' %}" alt="PCI Cert Pro">
-                    </div>
-                </div>
-            </div>
-
-            <div class="form-card">
-                <div class="detail-row">
-                    <span class="label">Apellidos</span>
-                    <span class="value">{{ usuario.last_name|default:"—" }}</span>
-                </div>
-                <div class="detail-row">
-                    <span class="label">Nombre</span>
-                    <span class="value">{{ usuario.first_name|default:"—" }}</span>
-                </div>
-                <div class="detail-row">
-                    <span class="label">Nombre de usuario</span>
-                    <span class="value">{{ usuario.username }}</span>
-                </div>
-                <div class="detail-row">
-                    <span class="label">Correo</span>
-                    <span class="value">{{ usuario.email|default:"—" }}</span>
-                </div>
-                <div class="detail-row">
-                    <span class="label">Estado</span>
-                    <span class="value">
-                        {% if usuario.is_active %}
-                            <span class="badge badge-success">Activo</span>
-                        {% else %}
-                            <span class="badge badge-danger">Inactivo</span>
-                        {% endif %}
-                    </span>
-                </div>
-                <div class="detail-row">
-                    <span class="label">Rol</span>
-                    <span class="value">{% if usuario.is_superuser %}Administrador Global{% else %}Usuario{% endif %}</span>
-                </div>
-                <div class="detail-row">
-                    <span class="label">Fecha de registro</span>
-                    <span class="value">{{ usuario.date_joined|date:"d/m/Y" }}</span>
-                </div>
-                <div class="detail-row">
-                    <span class="label">Último acceso</span>
-                    <span class="value">{{ usuario.last_login|date:"d/m/Y H:i"|default:"—" }}</span>
-                </div>
-                <a href="{% url 'usuarios_lista' %}" class="btn-back">← Volver a Usuarios</a>
-            </div>
-
-        </section>
-    </main>
-</div>
-<script src="https://unpkg.com/feather-icons/dist/feather.min.js"></script>
-<script>feather.replace({'stroke-width': 2})</script>
 </body>
 </html>

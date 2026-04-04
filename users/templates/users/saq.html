@@ -3,260 +3,140 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>SAQ | PCI Cert Pro</title>
+    <title>{{ tipo.nombre }} | PCI Cert Pro</title>
     <link rel="stylesheet" href="{% static 'users/css/main.css' %}">
 </head>
 <body>
-
 <div class="layout">
 
-    <!-- SIDEBAR -->
-    <aside class="sidebar">
-        <div class="profile">
-            <img src="{% static 'users/img/profile.png' %}" alt="Perfil">
-            <h4>{{ request.user.get_full_name|default:request.user.username }}</h4>
-            <p>Administrador Global</p>
-        </div>
-        <nav class="menu">
-            <a href="{% url 'dashboard' %}">
-                <i data-feather="grid"></i>
-                Dashboard
-            </a>
-            <a href="{% url 'usuarios_lista' %}">
-                <i data-feather="users"></i>
-                Usuarios
-            </a>
-            <a href="{% url 'entidades_lista' %}">
-                <i data-feather="home"></i>
-                Entidades
-            </a>
-            <a href="#" class="active">
-                <i data-feather="file-text"></i>
-                SAQ
-            </a>
-            <a href="#">
-                <i data-feather="check-square"></i>
-                Pre-Test
-            </a>
-            <a href="#">
-                <i data-feather="paperclip"></i>
-                Evidencias
-            </a>
-            <a href="#">
-                <i data-feather="star"></i>
-                Renovación
-            </a>
-            <a href="{% url 'logout' %}" class="logout">
-                <i data-feather="log-out"></i>
-                Cerrar Sesión
-            </a>
-        </nav>
-    </aside>
+<!-- SIDEBAR (igual) -->
+<aside class="sidebar">
+    <div class="profile">
+        <img src="{% static 'users/img/profile.png' %}">
+        <h4>{{ request.user.get_full_name|default:request.user.username }}</h4>
+        <p>Administrador Global</p>
+    </div>
+    <nav class="menu">
+        <a href="{% url 'dashboard' %}">Dashboard</a>
+        <a href="{% url 'usuarios_lista' %}">Usuarios</a>
+        <a href="{% url 'entidades_lista' %}">Entidades</a>
+        <a href="{% url 'saq_lista' %}" class="active">SAQ</a>
+        <a href="{% url 'logout' %}" class="logout">Cerrar Sesión</a>
+    </nav>
+</aside>
 
-    <!-- MAIN -->
-    <main class="main-content">
+<main class="main-content">
 
-    <!-- TOPBAR -->
-    <header class="topbar">
+<section class="content saq-content">
 
-        <nav class="topbar-nav">
-            <a href="{% url 'dashboard' %}">Dashboard</a>
-            <a href="#">Catálogos</a>
-            <a href="#">Configuración</a>
-            <a href="#">Ayuda</a>
-        </nav>
+<div class="saq-body">
 
-        <div class="topbar-right">
+<!-- ================= LEFT ================= -->
+<div class="saq-panel">
+    <div class="saq-panel-title">
+        <span>Secciones</span>
+    </div>
 
-            <div class="topbar-search">
-                <i data-feather="search"></i>
-                <input type="text" placeholder="Buscar...">
-            </div>
-
-            <div class="topbar-lang">
-                Eng ▾
-            </div>
-
-        </div>
-
-    </header>
-
-        <!-- CONTENT -->
-        <section class="content saq-content">
-
-            <!-- PAGE HEADER -->
-            <div class="page-header">
-                <div class="page-header-text">
-                    <h1>Administración de Cuestionarios SAQ</h1>
-                    <p>Añade, edita y actualiza las preguntas utilizadas en las evaluaciones de seguridad.
-                    Útilízalo para mantener el contenido alineado con los controles y requisitos vigentes de la organización.</p>
-                </div>
-                <div class="page-header-pcilogo">
-                    <img src="{% static 'users/img/pcilogo.png' %}" alt="PCI Cert Pro">
-                </div>
-            </div>
-
-            <!-- SAQ BODY: dos columnas -->
-            <div class="saq-body">
-
-                <!-- COLUMNA IZQUIERDA: panel de secciones -->
-                <div class="saq-panel">
-
-                    <!-- Título del SAQ -->
-                    <div class="saq-panel-title">
-                        <span>{{ saq.nombre|default:"SAQ A r1" }}</span>
-                        <a href="#" class="saq-edit-link">
-                            <i data-feather="edit-2"></i> Editar
-                        </a>
-                    </div>
-
-                    <!-- Sección: Preguntas -->
-                    <div class="saq-section">
-                        <button class="saq-section-header" onclick="toggleSection(this)">
-                            <span>Preguntas</span>
-                            <i data-feather="chevron-up"></i>
-                        </button>
-                        <div class="saq-section-body">
-                            <ul class="saq-question-list">
-                                {% for pregunta in saq.preguntas.all %}
-                                    <li>{{ pregunta.texto }}</li>
-                                {% empty %}
-                                    <li class="saq-empty">Nombre del Comercio:</li>
-                                    <li class="saq-empty">DBA (Nombre comercial):</li>
-                                    <li class="saq-empty">Correo Electrónico:</li>
-                                    <li class="saq-empty">Sitio Web:</li>
-                                    <li class="saq-empty">Nombre de Contacto:</li>
-                                    <li class="saq-empty">Título del Contacto:</li>
-                                    <li class="saq-empty">Número del Contacto:</li>
-                                    <li class="saq-empty">Correo del Contacto:</li>
-                                {% endfor %}
-                            </ul>
-                            <a href="#" class="saq-btn-action">
-                                <i data-feather="plus-circle"></i> Agregar Pregunta
-                            </a>
-                            <a href="#" class="saq-btn-action saq-btn-secondary">
-                                <i data-feather="upload"></i> Importar Preguntas
-                            </a>
-                        </div>
-                    </div>
-
-                    <!-- Sección: Orden de la pregunta -->
-                    <div class="saq-section">
-                        <button class="saq-section-header collapsed" onclick="toggleSection(this)">
-                            <span>Orden de la pregunta</span>
-                            <i data-feather="chevron-up"></i>
-                        </button>
-                        <div class="saq-section-body" style="display:none;"></div>
-                    </div>
-
-                    <!-- Sección: Resultados -->
-                    <div class="saq-section">
-                        <button class="saq-section-header collapsed" onclick="toggleSection(this)">
-                            <span>Resultados</span>
-                            <i data-feather="chevron-up"></i>
-                        </button>
-                        <div class="saq-section-body" style="display:none;"></div>
-                    </div>
-
-                </div>
-
-                <!-- COLUMNA DERECHA: editor -->
-                <div class="saq-editor">
-
-                    <!-- Botones superiores -->
-                    <div class="saq-editor-actions">
-                        <a href="#" class="saq-btn-top saq-btn-top-primary">
-                            <i data-feather="plus"></i> Crear
-                        </a>
-                        <a href="#" class="saq-btn-top saq-btn-top-secondary">
-                            <i data-feather="send"></i> Enviar
-                        </a>
-                        <a href="#" class="saq-btn-top saq-btn-top-outline">
-                            <i data-feather="eye"></i> Vista Previa
-                        </a>
-                    </div>
-
-                    <!-- Toolbar de edición de texto -->
-                    <div class="saq-editor-toolbar">
-                        <select class="toolbar-select">
-                            <option>14</option>
-                            <option>12</option>
-                            <option>16</option>
-                            <option>18</option>
-                        </select>
-                        <button class="toolbar-btn" title="Texto"><b>T</b></button>
-                        <button class="toolbar-btn toolbar-btn-circle" title="Color"></button>
-                        <button class="toolbar-btn" title="Negrita"><b>B</b></button>
-                        <button class="toolbar-btn" title="Itálica"><i>I</i></button>
-                        <button class="toolbar-btn" title="Subrayado"><u>U</u></button>
-                        <button class="toolbar-btn" title="Tachado"><s>S</s></button>
-                        <div class="toolbar-sep"></div>
-                        <button class="toolbar-btn"><i data-feather="align-left" style="width:13px;height:13px"></i></button>
-                        <button class="toolbar-btn"><i data-feather="align-center" style="width:13px;height:13px"></i></button>
-                        <button class="toolbar-btn"><i data-feather="align-right" style="width:13px;height:13px"></i></button>
-                        <div class="toolbar-sep"></div>
-                        <button class="toolbar-btn"><i data-feather="list" style="width:13px;height:13px"></i></button>
-                        <button class="toolbar-btn"><i data-feather="image" style="width:13px;height:13px"></i></button>
-                        <button class="toolbar-btn"><i data-feather="link" style="width:13px;height:13px"></i></button>
-                    </div>
-
-                    <!-- Área de edición / formulario -->
-                    <div class="saq-editor-body">
-                        <h3 class="saq-editor-section-title">Part 1a. Comercio Evaluado</h3>
-
-                        <div class="saq-field">
-                            <label>Nombre del Comercio:</label>
-                            <input type="text" name="nombre_comercio" value="{{ saq.nombre_comercio|default:'' }}">
-                        </div>
-                        <div class="saq-field">
-                            <label>DBA (Nombre comercial):</label>
-                            <input type="text" name="dba" value="{{ saq.dba|default:'' }}">
-                        </div>
-                        <div class="saq-field">
-                            <label>Correo Electrónico:</label>
-                            <input type="email" name="email" value="{{ saq.email|default:'' }}">
-                        </div>
-                        <div class="saq-field">
-                            <label>Sitio Web:</label>
-                            <input type="url" name="sitio_web" value="{{ saq.sitio_web|default:'' }}">
-                        </div>
-                        <div class="saq-field">
-                            <label>Nombre de Contacto:</label>
-                            <input type="text" name="nombre_contacto" value="{{ saq.nombre_contacto|default:'' }}">
-                        </div>
-                        <div class="saq-field">
-                            <label>Título del Contacto:</label>
-                            <input type="text" name="titulo_contacto" value="{{ saq.titulo_contacto|default:'' }}">
-                        </div>
-                        <div class="saq-field">
-                            <label>Número del Contacto:</label>
-                            <input type="text" name="numero_contacto" value="{{ saq.numero_contacto|default:'' }}">
-                        </div>
-                        <div class="saq-field">
-                            <label>Correo del Contacto:</label>
-                            <input type="email" name="correo_contacto" value="{{ saq.correo_contacto|default:'' }}">
-                        </div>
-                    </div>
-
-                </div>
-            </div>
-
-        </section>
-    </main>
+    {% for seccion in secciones %}
+    <div class="saq-seccion-item {% if seccion_activa and seccion.pk == seccion_activa.pk %}active{% endif %}">
+        <a href="{% url 'saq_detalle_seccion' tipo.pk seccion.pk %}">
+            {{ seccion.nombre }}
+        </a>
+    </div>
+    {% endfor %}
 </div>
 
-<script src="https://unpkg.com/feather-icons/dist/feather.min.js"></script>
-<script>feather.replace({'stroke-width': 2})</script>
+<!-- ================= RIGHT ================= -->
+<div class="saq-editor">
+
+{% if seccion_activa %}
+
+<h3>{{ seccion_activa.nombre }}</h3>
+
+<!-- 🔥 FORM INLINE -->
+<div class="saq-inline-form">
+    <input type="text" id="pregunta_texto" placeholder="Escribe la pregunta">
+    <input type="text" id="pregunta_ref" placeholder="Ref PCI (opcional)">
+    <button id="btnAdd">Agregar</button>
+</div>
+
+<!-- 🔥 TABLA -->
+<table class="modern-table" id="tablaPreguntas">
+<thead>
+<tr>
+    <th>#</th>
+    <th>Ref</th>
+    <th>Pregunta</th>
+    <th>Activa</th>
+</tr>
+</thead>
+<tbody>
+
+{% for entrada in preguntas %}
+<tr>
+    <td>{{ entrada.orden }}</td>
+    <td>{{ entrada.pregunta.referencia_pci|default:"-" }}</td>
+    <td>{{ entrada.pregunta.texto }}</td>
+    <td>{{ entrada.pregunta.activa|yesno:"Sí,No" }}</td>
+</tr>
+{% endfor %}
+
+</tbody>
+</table>
+
+{% endif %}
+
+</div>
+</div>
+
+</section>
+</main>
+</div>
+
 <script>
-function toggleSection(btn) {
-    const body = btn.nextElementSibling;
-    const icon = btn.querySelector('[data-feather="chevron-up"]');
-    const isOpen = body.style.display !== 'none';
-    body.style.display = isOpen ? 'none' : 'block';
-    btn.classList.toggle('collapsed', isOpen);
-    // Rotar ícono
-    icon.style.transform = isOpen ? 'rotate(180deg)' : 'rotate(0deg)';
-}
+const btn = document.getElementById("btnAdd");
+
+btn?.addEventListener("click", function() {
+
+    const texto = document.getElementById("pregunta_texto").value;
+    const ref = document.getElementById("pregunta_ref").value;
+
+    fetch("{% url 'ajax_crear_pregunta' %}", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            "X-CSRFToken": "{{ csrf_token }}"
+        },
+        body: JSON.stringify({
+            texto: texto,
+            referencia: ref,
+            seccion_id: "{{ seccion_activa.pk }}"
+        })
+    })
+    .then(res => res.json())
+    .then(data => {
+
+        if(data.success){
+
+            const table = document.querySelector("#tablaPreguntas tbody");
+
+            const row = `
+            <tr>
+                <td>${data.orden}</td>
+                <td>${data.referencia || '-'}</td>
+                <td>${data.texto}</td>
+                <td>Sí</td>
+            </tr>
+            `;
+
+            table.insertAdjacentHTML("beforeend", row);
+
+            document.getElementById("pregunta_texto").value = "";
+            document.getElementById("pregunta_ref").value = "";
+        }
+    });
+});
 </script>
+
 </body>
 </html>

@@ -28,7 +28,6 @@
     </aside>
 
     <main class="main-content">
-
         <header class="topbar">
             <nav class="topbar-nav">
                 <a href="{% url 'dashboard' %}">Dashboard</a>
@@ -36,47 +35,25 @@
                 <a href="#">Configuración</a>
                 <a href="#">Ayuda</a>
             </nav>
-            <div class="topbar-right">
-                <div class="topbar-search">
-                    <i data-feather="search"></i>
-                    <input type="text" placeholder="Buscar...">
-                </div>
-                <div class="topbar-lang">Eng ▾</div>
-            </div>
         </header>
 
         <section class="content">
-
             <div class="page-header">
-                <div class="page-header-text">
-                    <h1>{% if form.instance.pk %}Editar Entidad{% else %}Nueva Entidad{% endif %}</h1>
-                    <p>{% if form.instance.pk %}Modifica los datos de la entidad y su usuario asignado.{% else %}Completa los campos para registrar una nueva entidad en el sistema.{% endif %}</p>
-                </div>
-                <div class="page-header-logo-min">
-                    <img src="{% static 'users/img/logo.png' %}" alt="PCI Cert Pro">
-                </div>
+                <h1>{% if form.instance.pk %}Editar Entidad{% else %}Nueva Entidad{% endif %}</h1>
             </div>
 
             <div class="form-card">
-                <form method="post" class="form-modern">
+                <form method="post">
                     {% csrf_token %}
-                    <p><label for="id_usuario">Usuario</label>{{ form.usuario }}</p>
-                    <p><label for="id_nombre_empresa">Nombre de la empresa</label>{{ form.nombre_empresa }}</p>
-                    <p><label for="id_dba">DBA</label>{{ form.dba }}</p>
-                    <p><label for="id_email">Email</label>{{ form.email }}</p>
-                    <p><label for="id_sitio_web">Sitio web</label>{{ form.sitio_web }}</p>
-                    <p><label for="id_contacto">Contacto</label>{{ form.contacto }}</p>
+                    {{ form.as_p }}
                     <div class="form-actions">
-                        <a href="{% url 'entidades_lista' %}" class="btn-secondary">Cancelar</a>
-                        <button type="submit" class="btn-primary">Guardar</button>
+                        <a href="{% url 'entidades_lista' %}">Cancelar</a>
+                        <button type="submit">Guardar</button>
                     </div>
                 </form>
             </div>
-
         </section>
     </main>
 </div>
-<script src="https://unpkg.com/feather-icons/dist/feather.min.js"></script>
-<script>feather.replace({'stroke-width': 2})</script>
 </body>
 </html>
