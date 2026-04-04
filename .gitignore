@@ -16,3 +16,7 @@ __pycache__/
 
 # backups de base de datos
 *.sql
+
+# otros archivos
+*CSS.txt
+*HTML.txt
