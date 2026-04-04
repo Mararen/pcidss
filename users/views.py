@@ -198,20 +198,32 @@ def saq_lista(request):
 @login_required
 def saq_detalle(request, tipo_pk):
     tipo = get_object_or_404(TipoSAQ, pk=tipo_pk)
+
+    secciones = tipo.secciones.all().order_by("orden")
+    seccion_activa = secciones.first()
+
+    preguntas = []
+    if seccion_activa:
+        preguntas = PreguntaEnSeccion.objects.filter(
+            seccion=seccion_activa
+        ).select_related("pregunta").order_by("orden")
+
     return render(request, "users/saq.html", {
         "tipo": tipo,
-        "secciones": tipo.secciones.all(),
-        "seccion_activa": None,
-        "preguntas": []
+        "secciones": secciones,
+        "seccion_activa": seccion_activa,
+        "preguntas": preguntas
     })
 
 
 @login_required
 def saq_detalle_seccion(request, tipo_pk, seccion_pk):
     tipo = get_object_or_404(TipoSAQ, pk=tipo_pk)
-    seccion = get_object_or_404(SeccionSAQ, pk=seccion_pk)
+    seccion = get_object_or_404(SeccionSAQ, pk=seccion_pk, tipo_saq=tipo)
 
-    preguntas = PreguntaEnSeccion.objects.filter(seccion=seccion).select_related("pregunta")
+    preguntas = PreguntaEnSeccion.objects.filter(
+        seccion=seccion
+    ).select_related("pregunta").order_by("orden")
 
     return render(request, "users/saq.html", {
         "tipo": tipo,
@@ -221,31 +233,86 @@ def saq_detalle_seccion(request, tipo_pk, seccion_pk):
     })
 
 
+# ─── SECCIONES (AJAX) ───────────────────────────────────
+
 @login_required
 @require_POST
-def saq_pregunta_ajax_crear(request, tipo_pk, seccion_pk):
-    seccion = get_object_or_404(SeccionSAQ, pk=seccion_pk)
+def saq_seccion_crear(request, tipo_pk):
+    tipo = get_object_or_404(TipoSAQ, pk=tipo_pk)
 
-    texto = request.POST.get("texto")
-
-    if not texto:
+    nombre = request.POST.get("nombre")
+    if not nombre:
         return JsonResponse({"success": False})
 
-    pregunta = PreguntaSAQ.objects.create(
-        texto=texto,
-        referencia_pci=request.POST.get("referencia_pci"),
-        activa=request.POST.get("activa") == "true"
-    )
+    orden = tipo.secciones.count() + 1
 
-    entrada = PreguntaEnSeccion.objects.create(
-        pregunta=pregunta,
-        seccion=seccion,
-        orden=PreguntaEnSeccion.objects.filter(seccion=seccion).count() + 1
+    seccion = SeccionSAQ.objects.create(
+        tipo_saq=tipo,
+        nombre=nombre,
+        orden=orden
     )
 
     return JsonResponse({
         "success": True,
-        "id": pregunta.id,
-        "texto": pregunta.texto,
-        "orden": entrada.orden
+        "id": seccion.id,
+        "nombre": seccion.nombre
     })
+
+
+# ─── PREGUNTAS (AJAX CORE) ──────────────────────────────
+
+@login_required
+@require_POST
+def saq_pregunta_ajax_crear(request, tipo_pk, seccion_pk):
+    tipo = get_object_or_404(TipoSAQ, pk=tipo_pk)
+    seccion = get_object_or_404(SeccionSAQ, pk=seccion_pk, tipo_saq=tipo)
+
+    texto = request.POST.get("texto")
+    referencia = request.POST.get("referencia_pci")
+    activa = request.POST.get("activa") == "true"
+
+    if not texto:
+        return JsonResponse({"success": False, "error": "Texto requerido"})
+
+    # REUTILIZACIÓN DE PREGUNTAS
+    pregunta, created = PreguntaSAQ.objects.get_or_create(
+        texto=texto,
+        referencia_pci=referencia,
+        defaults={"activa": activa}
+    )
+
+    orden = PreguntaEnSeccion.objects.filter(seccion=seccion).count() + 1
+
+    entrada = PreguntaEnSeccion.objects.create(
+        pregunta=pregunta,
+        seccion=seccion,
+        orden=orden
+    )
+
+    return JsonResponse({
+        "success": True,
+        "pregunta": {
+            "id": pregunta.id,
+            "texto": pregunta.texto,
+            "referencia_pci": pregunta.referencia_pci,
+            "activa": pregunta.activa,
+            "orden": entrada.orden
+        }
+    })
+
+
+@login_required
+@require_POST
+def saq_pregunta_eliminar(request, tipo_pk, seccion_pk, pregunta_pk):
+    seccion = get_object_or_404(SeccionSAQ, pk=seccion_pk)
+    pregunta = get_object_or_404(PreguntaSAQ, pk=pregunta_pk)
+
+    PreguntaEnSeccion.objects.filter(
+        seccion=seccion,
+        pregunta=pregunta
+    ).delete()
+
+    if not PreguntaEnSeccion.objects.filter(pregunta=pregunta).exists():
+        pregunta.delete()
+
+    return JsonResponse({"success": True})

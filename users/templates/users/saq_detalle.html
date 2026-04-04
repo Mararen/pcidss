@@ -3,7 +3,7 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>{{ tipo.nombre }} | PCI Cert Pro</title>
+    <title>SAQ | PCI Cert Pro</title>
     <link rel="stylesheet" href="{% static 'users/css/main.css' %}">
 </head>
 <body>
@@ -12,202 +12,45 @@
     <!-- SIDEBAR -->
     <aside class="sidebar">
         <div class="profile">
-            <img src="{% static 'users/img/profile.png' %}" alt="Perfil">
+            <img src="{% static 'users/img/profile.png' %}">
             <h4>{{ request.user.get_full_name|default:request.user.username }}</h4>
             <p>Administrador Global</p>
         </div>
+
         <nav class="menu">
-            <a href="{% url 'dashboard' %}"><i data-feather="grid"></i> Dashboard</a>
-            <a href="{% url 'usuarios_lista' %}"><i data-feather="users"></i> Usuarios</a>
-            <a href="{% url 'entidades_lista' %}"><i data-feather="home"></i> Entidades</a>
-            <a href="{% url 'saq_lista' %}" class="active"><i data-feather="file-text"></i> SAQ</a>
-            <a href="#"><i data-feather="check-square"></i> Pre-Test</a>
-            <a href="#"><i data-feather="paperclip"></i> Evidencias</a>
-            <a href="#"><i data-feather="star"></i> Renovación</a>
-            <a href="{% url 'logout' %}" class="logout"><i data-feather="log-out"></i> Cerrar Sesión</a>
+            <a href="{% url 'dashboard' %}">Dashboard</a>
+            <a href="{% url 'usuarios_lista' %}">Usuarios</a>
+            <a href="{% url 'entidades_lista' %}">Entidades</a>
+            <a href="{% url 'saq_lista' %}" class="active">SAQ</a>
+            <a href="{% url 'logout' %}" class="logout">Cerrar sesión</a>
         </nav>
     </aside>
 
+    <!-- MAIN -->
     <main class="main-content">
-        <!-- TOPBAR -->
+
         <header class="topbar">
-            <nav class="topbar-nav">
-                <a href="{% url 'dashboard' %}">Dashboard</a>
-                <a href="#">Catálogos</a>
-                <a href="#">Configuración</a>
-                <a href="#">Ayuda</a>
-            </nav>
-            <div class="topbar-right">
-                <div class="topbar-search">
-                    <i data-feather="search"></i>
-                    <input type="text" placeholder="Buscar...">
-                </div>
-                <div class="topbar-lang">Eng ▾</div>
-            </div>
+            <h2>Cuestionarios SAQ</h2>
         </header>
 
-        <section class="content saq-content">
+        <section class="content">
 
-            <!-- PAGE HEADER -->
-            <div class="page-header" style="margin-bottom:16px;">
-                <div class="page-header-text">
-                    <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px;">
-                        <a href="{% url 'saq_lista' %}" style="color:var(--text-muted);font-size:13px;text-decoration:none;">
-                            ← SAQ
-                        </a>
-                    </div>
-                    <h1>{{ tipo.nombre }}</h1>
-                    {% if tipo.descripcion %}<p>{{ tipo.descripcion }}</p>{% endif %}
-                </div>
-                <div style="display:flex;gap:10px;align-items:flex-start;">
-                    <a href="{% url 'saq_tipo_editar' tipo.pk %}" class="btn-secondary">
-                        <i data-feather="edit-2" style="width:13px;height:13px;vertical-align:middle;margin-right:4px;"></i>
-                        Editar SAQ
-                    </a>
-                    <div class="page-header-logo-min">
-                        <img src="{% static 'users/img/pcilogo.png' %}" alt="PCI Cert Pro">
-                    </div>
-                </div>
-            </div>
-
-            <!-- CUERPO: dos columnas -->
-            <div class="saq-body">
-
-                <!-- IZQUIERDA: secciones -->
-                <div class="saq-panel">
-
-                    <div class="saq-panel-title">
-                        <span>Secciones</span>
-                        <a href="{% url 'saq_seccion_crear' tipo.pk %}" class="saq-edit-link">
-                            <i data-feather="plus"></i> Nueva sección
-                        </a>
-                    </div>
-
-                    {% for seccion in secciones %}
-                    <div class="saq-seccion-item {% if seccion_activa and seccion.pk == seccion_activa.pk %}active{% endif %}">
-                        <a href="{% url 'saq_detalle_seccion' tipo.pk seccion.pk %}" class="saq-seccion-link">
-                            <i data-feather="chevron-right" class="saq-seccion-chevron"></i>
-                            <div>
-                                <span class="saq-seccion-nombre">{{ seccion.nombre }}</span>
-                                <span class="saq-seccion-count">{{ seccion.preguntas.count }} pregunta{{ seccion.preguntas.count|pluralize:"s" }}</span>
-                            </div>
-                        </a>
-                        <div class="saq-seccion-actions">
-                            <a href="{% url 'saq_seccion_editar' tipo.pk seccion.pk %}" class="btn-icon" title="Editar sección">
-                                <i data-feather="edit-2" style="width:13px;height:13px"></i>
-                            </a>
-                            <a href="{% url 'saq_seccion_eliminar' tipo.pk seccion.pk %}" class="btn-icon btn-icon-delete" title="Eliminar sección">
-                                <i data-feather="trash-2" style="width:13px;height:13px"></i>
-                            </a>
-                        </div>
-                    </div>
-                    {% empty %}
-                    <div class="saq-empty-state" style="padding:24px 0;">
-                        <i data-feather="layers"></i>
-                        <p>Sin secciones todavía.</p>
-                        <a href="{% url 'saq_seccion_crear' tipo.pk %}" class="btn-primary" style="font-size:13px;padding:7px 14px;">
-                            Agregar primera sección
-                        </a>
-                    </div>
-                    {% endfor %}
-
-                </div>
-
-                <!-- DERECHA: preguntas de la sección activa -->
-                <div class="saq-editor">
-
-                    {% if seccion_activa %}
-
-                    <div class="saq-editor-actions">
-                        <span class="saq-seccion-title-badge">{{ seccion_activa.nombre }}</span>
-                        <a href="{% url 'saq_pregunta_agregar' tipo.pk seccion_activa.pk %}" class="saq-btn-top saq-btn-top-primary">
-                            <i data-feather="plus"></i> Agregar pregunta
-                        </a>
-                    </div>
-
-                    <!-- Tabla de preguntas -->
-                    {% if preguntas %}
-                    <div class="saq-preguntas-wrapper">
-                        <table class="modern-table saq-preguntas-table">
-                            <thead>
-                                <tr>
-                                    <th style="width:50px;">#</th>
-                                    <th style="width:90px;">Ref. PCI</th>
-                                    <th>Pregunta</th>
-                                    <th style="width:70px;">Activa</th>
-                                    <th style="width:90px;">Acciones</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for entrada in preguntas %}
-                                <tr>
-                                    <td class="saq-orden">{{ entrada.orden }}</td>
-                                    <td>
-                                        {% if entrada.pregunta.referencia_pci %}
-                                            <span class="saq-ref-badge">{{ entrada.pregunta.referencia_pci }}</span>
-                                        {% else %}
-                                            <span style="color:var(--text-muted);">—</span>
-                                        {% endif %}
-                                    </td>
-                                    <td class="saq-texto-pregunta">{{ entrada.pregunta.texto }}</td>
-                                    <td>
-                                        {% if entrada.pregunta.activa %}
-                                            <span class="badge badge-success">Sí</span>
-                                        {% else %}
-                                            <span class="badge badge-danger">No</span>
-                                        {% endif %}
-                                    </td>
-                                    <td>
-                                        <div class="actions">
-                                            <a href="{% url 'saq_pregunta_editar' tipo.pk seccion_activa.pk entrada.pregunta.pk %}"
-                                               class="btn-icon" title="Editar">
-                                                <i data-feather="edit-2" style="width:13px;height:13px"></i>
-                                            </a>
-                                            <a href="{% url 'saq_pregunta_eliminar' tipo.pk seccion_activa.pk entrada.pregunta.pk %}"
-                                               class="btn-icon btn-icon-delete" title="Quitar">
-                                                <i data-feather="trash-2" style="width:13px;height:13px"></i>
-                                            </a>
-                                        </div>
-                                    </td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-                    {% else %}
-                    <div class="saq-empty-state" style="margin:40px auto;">
-                        <i data-feather="help-circle"></i>
-                        <p>Esta sección no tiene preguntas todavía.</p>
-                        <a href="{% url 'saq_pregunta_agregar' tipo.pk seccion_activa.pk %}"
-                           class="btn-primary" style="font-size:13px;padding:7px 14px;">
-                            Agregar primera pregunta
-                        </a>
-                    </div>
+            <div class="saq-tipo-grid">
+                {% for tipo in tipos %}
+                <a href="{% url 'saq_detalle' tipo.pk %}" class="saq-tipo-card">
+                    <h3>{{ tipo.nombre }}</h3>
+                    <p>{{ tipo.secciones.count }} secciones</p>
+                    {% if tipo.descripcion %}
+                        <small>{{ tipo.descripcion }}</small>
                     {% endif %}
-
-                    {% else %}
-                    <div class="saq-empty-state" style="margin:60px auto;">
-                        <i data-feather="arrow-left"></i>
-                        <p>Selecciona una sección para ver sus preguntas.</p>
-                    </div>
-                    {% endif %}
-
-                </div>
-            </div>
-
-            <!-- Mensajes -->
-            {% if messages %}
-            <div class="saq-messages">
-                {% for msg in messages %}
-                <div class="saq-message saq-message-{{ msg.tags }}">{{ msg }}</div>
+                </a>
+                {% empty %}
+                <p>No hay tipos de SAQ registrados.</p>
                 {% endfor %}
             </div>
-            {% endif %}
 
         </section>
     </main>
 </div>
-<script src="https://unpkg.com/feather-icons/dist/feather.min.js"></script>
-<script>feather.replace({'stroke-width': 2})</script>
 </body>
 </html>
