@@ -35,8 +35,7 @@ class SeccionSAQ(models.Model):
 class PreguntaSAQ(models.Model):
     texto = models.TextField()
     referencia_pci = models.CharField(max_length=50, blank=True)
-
-    tipos_saq = models.ManyToManyField(TipoSAQ, related_name="preguntas")
+    activa = models.BooleanField(default=True)
 
     def __str__(self):
         return self.texto
