@@ -31,20 +31,16 @@ urlpatterns = [
     path('entidades/<int:pk>/editar/', views.EntidadUpdateView.as_view(), name='entidad_editar'),
     path('entidades/<int:pk>/toggle/', views.entidad_toggle, name='entidad_toggle'),
 
-    # SAQ
-
+    # ─── SAQ ──────────────────────────────────────────────────
     path('saq/', views.saq_lista, name='saq_lista'),
-    path('saq/<int:tipo_pk>/', views.saq_detalle, name='saq_detalle'),
-    path('saq/<int:tipo_pk>/seccion/<int:seccion_pk>/', views.saq_detalle_seccion, name='saq_detalle_seccion'),
+
+    path('saq/<int:tipo_pk>/', views.saq_editor, name='saq_detalle'),
+    path('saq/<int:tipo_pk>/seccion/<int:seccion_pk>/', views.saq_editor, name='saq_detalle_seccion'),
 
     # AJAX
-    path('saq/<int:tipo_pk>/seccion/crear/', views.saq_seccion_crear, name='saq_seccion_crear'),
-
-    path('saq/<int:tipo_pk>/seccion/<int:seccion_pk>/pregunta/ajax/crear/',
-     views.saq_pregunta_ajax_crear,
-     name='saq_pregunta_ajax_crear'),
-
-    path('saq/<int:tipo_pk>/seccion/<int:seccion_pk>/pregunta/<int:pregunta_pk>/eliminar/',
-     views.saq_pregunta_eliminar,
-     name='saq_pregunta_eliminar'),
+    path(
+    'saq/<int:tipo_pk>/seccion/<int:seccion_pk>/pregunta/ajax/crear/',
+    views.crear_pregunta,
+    name='saq_pregunta_ajax_crear'
+    ),
 ]

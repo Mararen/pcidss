@@ -63,7 +63,95 @@
                 </div>
             </div>
 
-            <!-- (resto del archivo queda igual) -->
+            <div class="card">
+
+    <div class="card-header" style="display:flex; justify-content:space-between; align-items:center;">
+        <h3>Listado de entidades</h3>
+
+        <form method="get" style="display:flex; gap:10px;">
+            <input 
+                type="text" 
+                name="buscar" 
+                placeholder="Buscar entidad..." 
+                value="{{ request.GET.buscar }}"
+                class="input"
+            >
+            <button type="submit" class="btn-secondary">Buscar</button>
+        </form>
+    </div>
+
+    <div class="card-body">
+
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Empresa</th>
+                    <th>DBA</th>
+                    <th>Email</th>
+                    <th>Contacto</th>
+                    <th>Estado</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                {% for entidad in entidades %}
+                <tr>
+                    <td>{{ entidad.nombre_empresa }}</td>
+                    <td>{{ entidad.dba }}</td>
+                    <td>{{ entidad.email }}</td>
+                    <td>{{ entidad.contacto }}</td>
+
+                    <td>
+                        {% if entidad.is_active %}
+                            <span class="badge badge-success">Activa</span>
+                        {% else %}
+                            <span class="badge badge-danger">Inactiva</span>
+                        {% endif %}
+                    </td>
+
+                    <td style="display:flex; gap:10px;">
+                        <a href="{% url 'entidad_editar' entidad.pk %}" class="btn-small">
+                            Editar
+                        </a>
+
+                        <a href="{% url 'entidad_toggle' entidad.pk %}" class="btn-small">
+                            {% if entidad.is_active %}
+                                Desactivar
+                            {% else %}
+                                Activar
+                            {% endif %}
+                        </a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" style="text-align:center;">
+                        No hay entidades registradas.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+    </div>
+
+    <!-- Paginación -->
+    <div class="card-footer" style="display:flex; justify-content:center; gap:10px;">
+        {% if is_paginated %}
+            {% if page_obj.has_previous %}
+                <a href="?page={{ page_obj.previous_page_number }}" class="btn-small">Anterior</a>
+            {% endif %}
+
+            <span>Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span>
+
+            {% if page_obj.has_next %}
+                <a href="?page={{ page_obj.next_page_number }}" class="btn-small">Siguiente</a>
+            {% endif %}
+        {% endif %}
+    </div>
+
+</div>
 
         </section>
     </main>
