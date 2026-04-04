@@ -7,13 +7,14 @@
     <link rel="stylesheet" href="{% static 'users/css/main.css' %}">
 </head>
 <body>
+
 <div class="layout">
 
     <!-- SIDEBAR -->
     <aside class="sidebar">
         <div class="profile">
             <img src="{% static 'users/img/profile.png' %}">
-            <h4>{{ request.user.get_full_name|default:request.user.username }}</h4>
+            <h4>{{ request.user.username }}</h4>
         </div>
 
         <nav class="menu">
@@ -29,27 +30,28 @@
     <main class="main-content">
 
         <header class="topbar">
-            <h2>Cuestionarios SAQ</h2>
+            <h2>Tipos de SAQ</h2>
         </header>
 
         <section class="content">
 
             <div class="saq-tipo-grid">
+
                 {% for tipo in tipos %}
-                <a href="{% url 'saq_detalle' tipo.pk %}" class="saq-tipo-card">
-                    <h3>{{ tipo.nombre }}</h3>
-                    <p>{{ tipo.secciones.count }} secciones</p>
-                    {% if tipo.descripcion %}
-                        <small>{{ tipo.descripcion }}</small>
-                    {% endif %}
-                </a>
+                    <a href="{% url 'saq_editor' tipo.pk %}" class="saq-tipo-card">
+                        <h3>{{ tipo.nombre }}</h3>
+                        <p>{{ tipo.secciones.count }} secciones</p>
+                    </a>
                 {% empty %}
-                <p>No hay tipos de SAQ registrados.</p>
+                    <p>No hay SAQ creados</p>
                 {% endfor %}
+
             </div>
 
         </section>
+
     </main>
 </div>
+
 </body>
 </html>
