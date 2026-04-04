@@ -3,7 +3,7 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>{{ tipo.nombre }} | SAQ</title>
+    <title>SAQ | PCI Cert Pro</title>
     <link rel="stylesheet" href="{% static 'users/css/main.css' %}">
 </head>
 <body>
@@ -29,99 +29,27 @@
     <main class="main-content">
 
         <header class="topbar">
-            <a href="{% url 'saq_lista' %}">← Volver</a>
-            <h2>{{ tipo.nombre }}</h2>
+            <h2>Cuestionarios SAQ</h2>
         </header>
 
         <section class="content">
 
-            <div class="saq-body">
-
-                <!-- SECCIONES -->
-                <div class="saq-panel">
-                    <h3>Secciones</h3>
-
-                    {% for seccion in secciones %}
-                    <div class="{% if seccion_activa and seccion.pk == seccion_activa.pk %}active{% endif %}">
-                        <a href="{% url 'saq_detalle_seccion' tipo.pk seccion.pk %}">
-                            {{ seccion.nombre }} ({{ seccion.preguntas.count }})
-                        </a>
-                    </div>
-                    {% empty %}
-                    <p>Sin secciones</p>
-                    {% endfor %}
-                </div>
-
-                <!-- PREGUNTAS -->
-                <div class="saq-editor">
-
-                    {% if seccion_activa %}
-
-                    <h3>{{ seccion_activa.nombre }}</h3>
-
-                    <button id="btnAgregarPregunta">+ Agregar pregunta</button>
-
-                    {% if preguntas %}
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>#</th>
-                                <th>Pregunta</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for entrada in preguntas %}
-                            <tr>
-                                <td>{{ entrada.orden }}</td>
-                                <td>{{ entrada.pregunta.texto }}</td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                    {% else %}
-                        <p>No hay preguntas</p>
+            <div class="saq-tipo-grid">
+                {% for tipo in tipos %}
+                <a href="{% url 'saq_detalle' tipo.pk %}" class="saq-tipo-card">
+                    <h3>{{ tipo.nombre }}</h3>
+                    <p>{{ tipo.secciones.count }} secciones</p>
+                    {% if tipo.descripcion %}
+                        <small>{{ tipo.descripcion }}</small>
                     {% endif %}
-
-                    {% else %}
-                        <p>Selecciona una sección</p>
-                    {% endif %}
-
-                </div>
-
+                </a>
+                {% empty %}
+                <p>No hay tipos de SAQ registrados.</p>
+                {% endfor %}
             </div>
 
         </section>
     </main>
 </div>
-
-<script>
-document.getElementById("btnAgregarPregunta")?.addEventListener("click", function () {
-    const texto = prompt("Nueva pregunta:");
-
-    if (!texto) return;
-
-    fetch("{% url 'saq_pregunta_ajax_crear' tipo.pk seccion_activa.pk %}", {
-        method: "POST",
-        headers: {
-            "X-CSRFToken": "{{ csrf_token }}",
-            "Content-Type": "application/x-www-form-urlencoded"
-        },
-        body: new URLSearchParams({
-            texto: texto,
-            referencia_pci: "",
-            activa: true
-        })
-    })
-    .then(res => res.json())
-    .then(data => {
-        if (data.success) {
-            location.reload();
-        } else {
-            alert("Error al guardar");
-        }
-    });
-});
-</script>
-
 </body>
 </html>

@@ -208,7 +208,7 @@ def saq_detalle(request, tipo_pk):
             seccion=seccion_activa
         ).select_related("pregunta").order_by("orden")
 
-    return render(request, "users/saq.html", {
+    return render(request, "users/saq_lista.html", {
         "tipo": tipo,
         "secciones": secciones,
         "seccion_activa": seccion_activa,
@@ -225,7 +225,7 @@ def saq_detalle_seccion(request, tipo_pk, seccion_pk):
         seccion=seccion
     ).select_related("pregunta").order_by("orden")
 
-    return render(request, "users/saq.html", {
+    return render(request, "users/saq_lista.html", {
         "tipo": tipo,
         "secciones": tipo.secciones.all(),
         "seccion_activa": seccion,
