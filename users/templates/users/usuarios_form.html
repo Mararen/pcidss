@@ -1,20 +1,74 @@
+{% extends 'users/base.html' %}
 {% load static %}
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <title>Usuario</title>
-</head>
-<body>
 
-<h1>Formulario Usuario</h1>
+{% block title %}
+    {% if form.instance.pk %}Editar Usuario{% else %}Nuevo Usuario{% endif %}
+{% endblock %}
 
-<form method="post">
-{% csrf_token %}
-{{ form.as_p }}
+{% block content %}
 
-<button type="submit">Guardar</button>
-</form>
+<!-- HEADER -->
+<div class="page-header">
+    <div class="page-header-text">
+        <h1>
+            {% if form.instance.pk %}
+                Editar usuario
+            {% else %}
+                Nuevo usuario
+            {% endif %}
+        </h1>
+        <p>Gestiona la información del usuario dentro del sistema.</p>
+    </div>
 
-</body>
-</html>
+    <div class="page-actions">
+        <a href="{% url 'usuarios_lista' %}" class="btn-secondary">
+            ← Volver
+        </a>
+    </div>
+</div>
+
+<!-- FORM CARD -->
+<div class="card" style="max-width:700px;">
+
+    <div class="card-header">
+        <h3>Datos del usuario</h3>
+    </div>
+
+    <div class="card-body">
+
+        <form method="post">
+            {% csrf_token %}
+
+            <div class="form-grid">
+
+                {% for field in form %}
+                <div class="form-group">
+                    <label>{{ field.label }}</label>
+                    {{ field }}
+
+                    {% if field.errors %}
+                        <div class="login-error">
+                            {{ field.errors }}
+                        </div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+
+            </div>
+
+            <div class="form-actions">
+                <a href="{% url 'usuarios_lista' %}" class="btn-secondary">
+                    Cancelar
+                </a>
+
+                <button type="submit" class="btn-primary">
+                    Guardar
+                </button>
+            </div>
+
+        </form>
+
+    </div>
+</div>
+
+{% endblock %}

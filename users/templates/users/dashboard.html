@@ -1,86 +1,21 @@
+{% extends 'users/base.html' %}
 {% load static %}
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <title>Dashboard | PCI Cert Pro</title>
-    <link rel="stylesheet" href="{% static 'users/css/main.css' %}">
-</head>
-<body>
 
-<div class="layout">
+{% block title %}Dashboard | PCI Cert Pro{% endblock %}
 
-    <aside class="sidebar">
-        <div class="profile">
-            <img src="{% static 'users/img/profile.png' %}" alt="Perfil">
-            <h4>{{ request.user.get_full_name|default:request.user.username }}</h4>
-            <p>Administrador Global</p>
-        </div>
-        <nav class="menu">
-            <a href="{% url 'dashboard' %}" class="active">
-                <i data-feather="grid"></i>
-                Dashboard
-            </a>
-            <a href="{% url 'usuarios_lista' %}">
-                <i data-feather="users"></i>
-                Usuarios
-            </a>
-            <a href="{% url 'entidades_lista' %}">
-                <i data-feather="home"></i>
-                Entidades
-            </a>
-            <a href="{% url 'saq_lista' %}">
-                <i data-feather="file-text"></i>
-                SAQ
-            </a>
-            <a href="#"><i data-feather="check-square"></i> Pre-Test</a>
-            <a href="#"><i data-feather="paperclip"></i> Evidencias</a>
-            <a href="#"><i data-feather="star"></i> Renovación</a>
-            <a href="{% url 'logout' %}" class="logout">
-                <i data-feather="log-out"></i>
-                Cerrar Sesión
-            </a>
-        </nav>
-    </aside>
+{% block content %}
 
-    <main class="main-content">
-
-        <header class="topbar">
-            <nav class="topbar-nav">
-                <a href="{% url 'dashboard' %}" class="active">Dashboard</a>
-                <a href="#">Catálogos</a>
-                <a href="#">Configuración</a>
-                <a href="#">Ayuda</a>
-            </nav>
-
-            <div class="topbar-right">
-                <div class="topbar-search">
-                    <i data-feather="search"></i>
-                    <input type="text" placeholder="Buscar...">
-                </div>
-                <div class="topbar-lang">Eng ▾</div>
-            </div>
-        </header>
-
-        <section class="content">
-            <div class="page-header">
-                <div class="page-header-text">
-                    <h1>¡Bienvenido a PCI Cert Pro!</h1>
-                    <p>
-                        Tu plataforma integral para la autocertificación en cumplimiento con el estándar PCI DSS v4.0.1.<br>
-                        Gestiona todo el proceso de certificación de manera segura, trazable y automatizada.
-                    </p>
-                </div>
-                <div class="page-header-logo">
-                    <img src="{% static 'users/img/logo.png' %}" alt="PCI Cert Pro">
-                </div>
-            </div>
-        </section>
-
-    </main>
+<div class="page-header">
+    <div class="page-header-text">
+        <h1>¡Bienvenido a PCI Cert Pro!</h1>
+        <p>
+            Tu plataforma integral para la autocertificación en cumplimiento con el estándar PCI DSS v4.0.1.<br>
+            Gestiona todo el proceso de certificación de manera segura, trazable y automatizada.
+        </p>
+    </div>
+    <div class="page-header-logo">
+        <img src="{% static 'users/img/logo.png' %}" alt="PCI Cert Pro">
+    </div>
 </div>
 
-<script src="https://unpkg.com/feather-icons/dist/feather.min.js"></script>
-<script>feather.replace({'stroke-width': 2})</script>
-</body>
-</html>
+{% endblock %}

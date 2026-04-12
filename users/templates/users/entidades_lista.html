@@ -1,163 +1,111 @@
+{% extends 'users/base.html' %}
 {% load static %}
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <title>Entidades | PCI Cert Pro</title>
-    <link rel="stylesheet" href="{% static 'users/css/main.css' %}">
-</head>
-<body>
-<div class="layout">
 
-    <aside class="sidebar">
-        <div class="profile">
-            <img src="{% static 'users/img/profile.png' %}" alt="Perfil">
-            <h4>{{ request.user.get_full_name|default:request.user.username }}</h4>
-            <p>
-                {% if request.user.is_superuser %}
-                    Administrador Global
-                {% else %}
-                    {{ request.user.groups.first.name|default:"Usuario" }}
-                {% endif %}
-            </p>
+{% block title %}Entidades | PCI Cert Pro{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+    <div class="page-header-text">
+        <h1>Administración de entidades</h1>
+        <p>Visualiza, edita y activa o desactiva entidades registradas.</p>
+    </div>
+
+    <div style="display:flex; align-items:center; gap:15px;">
+        <a href="{% url 'entidad_crear' %}" class="btn-primary">
+            + Nueva Entidad
+        </a>
+        <div class="page-header-logo-min">
+            <img src="{% static 'users/img/logo.png' %}">
         </div>
-
-        <nav class="menu">
-            <a href="{% url 'dashboard' %}"><i data-feather="grid"></i> Dashboard</a>
-            <a href="{% url 'usuarios_lista' %}"><i data-feather="users"></i> Usuarios</a>
-            <a href="{% url 'entidades_lista' %}" class="active"><i data-feather="home"></i> Entidades</a>
-            <a href="{% url 'saq_lista' %}"><i data-feather="file-text"></i> SAQ</a>
-            <a href="#"><i data-feather="check-square"></i> Pre-Test</a>
-            <a href="#"><i data-feather="paperclip"></i> Evidencias</a>
-            <a href="#"><i data-feather="star"></i> Renovación</a>
-            <a href="{% url 'logout' %}" class="logout"><i data-feather="log-out"></i> Cerrar Sesión</a>
-        </nav>
-    </aside>
-
-    <main class="main-content">
-
-        <header class="topbar">
-            <nav class="topbar-nav">
-                <a href="{% url 'dashboard' %}">Dashboard</a>
-                <a href="#">Catálogos</a>
-                <a href="#">Configuración</a>
-                <a href="#">Ayuda</a>
-            </nav>
-            <div class="topbar-right">
-                <div class="topbar-search">
-                    <i data-feather="search"></i>
-                    <input type="text" placeholder="Buscar...">
-                </div>
-                <div class="topbar-lang">Eng ▾</div>
-            </div>
-        </header>
-
-        <section class="content">
-
-            <!-- HEADER -->
-            <div class="page-header">
-                <div class="page-header-text">
-                    <h1>Administración de entidades</h1>
-                    <p>Visualiza, edita y activa o desactiva entidades registradas.</p>
-                </div>
-
-                <div style="display:flex; align-items:center; gap:15px;">
-                    <a href="{% url 'entidad_crear' %}" class="btn-primary">
-                        + Nueva Entidad
-                    </a>
-                    <div class="page-header-logo-min">
-                        <img src="{% static 'users/img/logo.png' %}">
-                    </div>
-                </div>
-            </div>
-
-            <!-- CONTROLES -->
-            <div class="table-controls">
-                <div class="table-controls-left">
-                    <form method="get">
-                        <input 
-                            type="text" 
-                            name="buscar" 
-                            placeholder="Buscar entidad..." 
-                            value="{{ request.GET.buscar }}"
-                        >
-                    </form>
-                </div>
-            </div>
-
-            <!-- TABLA -->
-            <table class="modern-table">
-                <thead>
-                    <tr>
-                        <td>Empresa</td>
-                        <td>DBA</td>
-                        <td>Email</td>
-                        <td>Contacto</td>
-                        <td>Estado</td>
-                        <td>Acciones</td>
-                    </tr>
-                </thead>
-
-                <tbody>
-                    {% for entidad in entidades %}
-                    <tr>
-                        <td>{{ entidad.nombre_empresa }}</td>
-                        <td>{{ entidad.dba }}</td>
-                        <td>{{ entidad.email }}</td>
-                        <td>{{ entidad.contacto }}</td>
-
-                        <td>
-                            {% if entidad.is_active %}
-                                <span class="badge badge-success">Activa</span>
-                            {% else %}
-                                <span class="badge badge-danger">Inactiva</span>
-                            {% endif %}
-                        </td>
-
-                        <td>
-                            <div class="actions">
-                                <a href="{% url 'entidad_editar' entidad.pk %}" class="btn-icon">
-                                    <i data-feather="edit"></i>
-                                </a>
-
-                                <a href="{% url 'entidad_toggle' entidad.pk %}" class="btn-icon danger">
-                                    <i data-feather="power"></i>
-                                </a>
-                            </div>
-                        </td>
-                    </tr>
-                    {% empty %}
-                    <tr>
-                        <td colspan="6">No hay entidades registradas.</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-
-            <!-- PAGINACIÓN -->
-            <div class="pagination">
-                <div>
-                    Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}
-                </div>
-
-                <div class="pagination-controls">
-                    {% if page_obj.has_previous %}
-                        <a href="?page={{ page_obj.previous_page_number }}">Anterior</a>
-                    {% endif %}
-
-                    <span class="current">{{ page_obj.number }}</span>
-
-                    {% if page_obj.has_next %}
-                        <a href="?page={{ page_obj.next_page_number }}">Siguiente</a>
-                    {% endif %}
-                </div>
-            </div>
-
-        </section>
-    </main>
+    </div>
 </div>
 
-<script src="https://unpkg.com/feather-icons/dist/feather.min.js"></script>
-<script>feather.replace({'stroke-width': 2})</script>
-</body>
-</html>
+<div class="table-controls">
+    <div class="table-controls-left">
+        <form method="get">
+            <input 
+                type="text" 
+                name="buscar" 
+                placeholder="Buscar entidad..." 
+                value="{{ request.GET.buscar }}"
+            >
+        </form>
+    </div>
+</div>
+
+<table class="modern-table">
+    <thead>
+        <tr>
+            <td>Empresa</td>
+            <td>DBA</td>
+            <td>Email</td>
+            <td>Contacto</td>
+            <td>Estado</td>
+            <td>Acciones</td>
+        </tr>
+    </thead>
+
+    <tbody>
+        {% for entidad in entidades %}
+        <tr>
+            <td>{{ entidad.nombre_empresa }}</td>
+            <td>{{ entidad.dba }}</td>
+            <td>{{ entidad.email }}</td>
+            <td>{{ entidad.contacto }}</td>
+
+            <td>
+                {% if entidad.is_active %}
+                    <span class="badge badge-success">Activa</span>
+                {% else %}
+                    <span class="badge badge-danger">Inactiva</span>
+                {% endif %}
+            </td>
+
+            <td>
+                <div class="actions">
+				    <a href="{% url 'entidades_detalle' entidad.pk %}" class="btn-icon">
+						<i data-feather="eye"></i>
+					</a>
+					
+					<a href="{% url 'entidad_editar' entidad.pk %}" class="btn-icon">
+						<i data-feather="edit"></i>
+					</a>
+
+					<a href="{% url 'entidad_toggle' entidad.pk %}" class="btn-icon">
+						{% if entidad.is_active %}
+						<i data-feather="toggle-right"></i>
+						{% else %}
+						<i data-feather="toggle-left"></i>
+						{% endif %}
+					</a>
+                </div>
+            </td>
+        </tr>
+        {% empty %}
+        <tr>
+            <td colspan="6">No hay entidades registradas.</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<div class="pagination">
+    <div>
+        Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}
+    </div>
+
+    <div class="pagination-controls">
+        {% if page_obj.has_previous %}
+            <a href="?page={{ page_obj.previous_page_number }}">Anterior</a>
+        {% endif %}
+
+        <span class="current">{{ page_obj.number }}</span>
+
+        {% if page_obj.has_next %}
+            <a href="?page={{ page_obj.next_page_number }}">Siguiente</a>
+        {% endif %}
+    </div>
+</div>
+
+{% endblock %}

@@ -1,0 +1,211 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Editor SAQ | PCI Cert Pro</title>
+<link rel="stylesheet" href="{% static 'users/css/main.css' %}">
+</head>
+
+<body>
+
+<div class="layout">
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+    <div class="profile">
+        <img src="{% static 'users/img/profile.png' %}">
+        <h4>{{ request.user.get_full_name|default:request.user.username }}</h4>
+        <p>
+            {% if request.user.is_superuser %}
+                Administrador Global
+            {% else %}
+                {{ request.user.groups.first.name|default:"Usuario" }}
+            {% endif %}
+        </p>
+    </div>
+
+    <nav class="menu">
+        <a href="{% url 'dashboard' %}">Dashboard</a>
+        <a href="{% url 'usuarios_lista' %}">Usuarios</a>
+        <a href="{% url 'entidades_lista' %}">Entidades</a>
+        <a href="{% url 'saq_lista' %}" class="active">SAQ</a>
+        <a href="{% url 'pretest' %}">Pre-Test</a>
+        <a href="{% url 'logout' %}" class="logout">Cerrar sesión</a>
+    </nav>
+</aside>
+
+<!-- MAIN -->
+<main class="main-content">
+
+<header class="topbar">
+    <h2>{{ tipo.nombre }}</h2>
+</header>
+
+<section class="content">
+
+<div style="display:flex; gap:20px;">
+
+<!-- SECCIONES -->
+<div class="card" style="width:260px; flex-shrink:0;">
+    <div class="card-header">
+        <h3>Secciones</h3>
+    </div>
+
+    <div class="card-body" style="display:flex; flex-direction:column; gap:8px;">
+        {% for s in secciones %}
+            <a href="{% url 'saq_detalle_seccion' tipo.pk s.pk %}"
+               class="btn-secondary {% if seccion_activa and s.pk == seccion_activa.pk %}active{% endif %}">
+               {{ s.nombre }}
+            </a>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- EDITOR -->
+<div class="card" style="flex:1;">
+
+    <div class="card-header">
+        <h3>
+            {% if seccion_activa %}
+                {{ seccion_activa.nombre }}
+            {% else %}
+                Selecciona una sección
+            {% endif %}
+        </h3>
+    </div>
+
+    <div class="card-body">
+
+    {% if seccion_activa %}
+
+        <!-- LISTA DE PREGUNTAS -->
+        <div id="preguntas-container" style="display:flex; flex-direction:column; gap:10px;">
+
+            {% for p in preguntas %}
+            <div id="pregunta-{{ p.pk }}" class="card" style="padding:12px;">
+                
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    
+                    <span>
+                        {{ p.orden }}. {{ p.pregunta.texto }}
+                    </span>
+
+                    <button 
+                        class="btn-icon danger btn-eliminar"
+                        data-id="{{ p.pk }}"
+                        data-url="{% url 'saq_pregunta_eliminar' tipo.pk seccion_activa.pk 0 %}">
+                        🗑
+                    </button>
+
+                </div>
+
+            </div>
+            {% empty %}
+                <p>No hay preguntas aún.</p>
+            {% endfor %}
+
+        </div>
+
+        <!-- FORM CREAR -->
+        <form id="form-pregunta"
+              data-url="{% url 'saq_pregunta_ajax_crear' tipo.pk seccion_activa.pk %}"
+              style="margin-top:20px;">
+
+            {% csrf_token %}
+
+            <div class="form-group">
+                <label>Nueva pregunta</label>
+                <input type="text" name="texto" required>
+            </div>
+
+            <div class="form-group">
+                <label>Referencia PCI (opcional)</label>
+                <input type="text" name="referencia_pci">
+            </div>
+
+            <div class="form-actions">
+                <button type="submit" class="btn-primary">
+                    + Agregar pregunta
+                </button>
+            </div>
+
+        </form>
+
+    {% endif %}
+
+    </div>
+
+</div>
+
+</div>
+
+</section>
+
+</main>
+</div>
+
+<!-- ICONOS -->
+<script src="https://unpkg.com/feather-icons/dist/feather.min.js"></script>
+<script>
+feather.replace({'stroke-width': 2});
+</script>
+
+<!-- ========================= -->
+<!-- JS CREAR PREGUNTA -->
+<!-- ========================= -->
+<script>
+const form = document.getElementById("form-pregunta");
+
+form?.addEventListener("submit", function(e){
+    e.preventDefault();
+
+    const data = new FormData(form);
+    const url = form.dataset.url;
+
+    fetch(url, {
+        method:"POST",
+        body:data,
+        headers:{
+            "X-CSRFToken": data.get("csrfmiddlewaretoken")
+        }
+    })
+    .then(res => res.json())
+    .then(data => {
+        if(data.success){
+            location.reload();
+        }
+    });
+});
+</script>
+
+<!-- ========================= -->
+<!-- JS ELIMINAR -->
+<!-- ========================= -->
+<script>
+document.querySelectorAll(".btn-eliminar").forEach(btn=>{
+    btn.addEventListener("click", function(){
+
+        const id = this.dataset.id;
+        const baseUrl = this.dataset.url;
+        const url = baseUrl.replace("0", id);
+
+        fetch(url,{
+            method:"POST",
+            headers:{
+                "X-CSRFToken": document.querySelector('[name=csrfmiddlewaretoken]').value
+            }
+        })
+        .then(res => res.json())
+        .then(data => {
+            if(data.success){
+                document.getElementById("pregunta-" + id).remove();
+            }
+        });
+
+    });
+});
+</script>
+
+</body>
+</html>

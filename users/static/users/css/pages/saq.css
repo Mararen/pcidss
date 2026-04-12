@@ -47,3 +47,8 @@
     border-radius: var(--radius);
     box-shadow: var(--shadow-sm);
 }
+
+.seccion-activa {
+    background: var(--primary-light);
+    border-color: var(--primary);
+}

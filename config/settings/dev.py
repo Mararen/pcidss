@@ -1,14 +1,7 @@
 from .base import *
-import os
 
 DEBUG = True
-ALLOWED_HOSTS = ["localhost", "127.0.0.1"]
-
-SECURE_SSL_REDIRECT = False
-SESSION_COOKIE_SECURE = False
-CSRF_COOKIE_SECURE = False
-
-STATICFILES_DIRS = [BASE_DIR / "users" / "static"]
+ALLOWED_HOSTS = ["127.0.0.1", "localhost"]
 
 DATABASES = {
     'default': {
@@ -20,5 +13,10 @@ DATABASES = {
         'PORT': os.environ.get('DB_PORT', '5432'),
     }
 }
+
+SESSION_COOKIE_SECURE = False
+CSRF_COOKIE_SECURE = False
+
+STATICFILES_DIRS = [BASE_DIR / "users" / "static"]
 
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'

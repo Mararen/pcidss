@@ -1,0 +1,61 @@
+{% extends 'users/base.html' %}
+{% load static %}
+
+{% block title %}{{ entidad.nombre_empresa }}{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+    <div class="page-header-text">
+        <h1>{{ entidad.nombre_empresa }}</h1>
+        <p>Detalle de la entidad</p>
+    </div>
+
+    <div class="page-actions">
+        <a href="{% url 'entidades_lista' %}" class="btn-secondary">← Volver</a>
+        <a href="{% url 'entidad_editar' entidad.pk %}" class="btn-primary">Editar</a>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h3>Datos generales</h3>
+    </div>
+
+    <div class="card-body">
+
+        <div class="detail-row">
+            <span class="label">Empresa</span>
+            <span class="value">{{ entidad.nombre_empresa }}</span>
+        </div>
+
+        <div class="detail-row">
+            <span class="label">DBA</span>
+            <span class="value">{{ entidad.dba|default:"—" }}</span>
+        </div>
+
+        <div class="detail-row">
+            <span class="label">Email</span>
+            <span class="value">{{ entidad.email }}</span>
+        </div>
+
+        <div class="detail-row">
+            <span class="label">Contacto</span>
+            <span class="value">{{ entidad.contacto|default:"—" }}</span>
+        </div>
+
+        <div class="detail-row">
+            <span class="label">Estado</span>
+            <span class="value">
+                {% if entidad.is_active %}
+                    <span class="badge badge-success">Activa</span>
+                {% else %}
+                    <span class="badge badge-danger">Inactiva</span>
+                {% endif %}
+            </span>
+        </div>
+
+    </div>
+</div>
+
+{% endblock %}

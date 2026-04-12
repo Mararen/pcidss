@@ -1,0 +1,65 @@
+{% load static %}
+
+<aside class="sidebar">
+
+    <div class="profile">
+        <img src="{% static 'users/img/profile.png' %}" alt="Perfil">
+        <h4>{{ request.user.get_full_name|default:request.user.username }}</h4>
+        <p>
+            {% if request.user.is_superuser %}
+                Administrador Global
+            {% else %}
+                {{ request.user.groups.first.name|default:"Usuario" }}
+            {% endif %}
+        </p>
+    </div>
+
+    <nav class="menu">
+
+        <a href="{% url 'dashboard' %}" class="{% if request.path == '/dashboard/' %}active{% endif %}">
+            <i data-feather="grid"></i> Dashboard
+        </a>
+
+        {% if perms.users.ver_usuarios %}
+        <a href="{% url 'usuarios_lista' %}">
+            <i data-feather="users"></i> Usuarios
+        </a>
+        {% endif %}
+
+        {% if perms.users.ver_entidades %}
+        <a href="{% url 'entidades_lista' %}">
+            <i data-feather="home"></i> Entidades
+        </a>
+        {% endif %}
+
+        {% if perms.users.ver_saq %}
+        <a href="{% url 'saq_lista' %}">
+            <i data-feather="file-text"></i> SAQ
+        </a>
+        {% endif %}
+
+        {% if perms.users.usar_pretest %}
+        <a href="{% url 'pretest_home' %}">
+            <i data-feather="check-square"></i> Pre-Test
+        </a>
+        {% endif %}
+
+        {% if perms.users.ver_evidencias %}
+        <a href="#">
+            <i data-feather="paperclip"></i> Evidencias
+        </a>
+        {% endif %}
+
+        {% if perms.users.gestionar_renovacion %}
+        <a href="#">
+            <i data-feather="star"></i> Renovación
+        </a>
+        {% endif %}
+
+        <a href="{% url 'logout' %}" class="logout">
+            <i data-feather="log-out"></i> Cerrar sesión
+        </a>
+
+    </nav>
+
+</aside>

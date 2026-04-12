@@ -1,145 +1,175 @@
+{% extends 'users/base.html' %}
 {% load static %}
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <title>{{ tipo.nombre }} | SAQ</title>
-    <link rel="stylesheet" href="{% static 'users/css/main.css' %}">
-</head>
-<body>
 
-<div class="layout">
+{% block title %}Editor SAQ | PCI Cert Pro{% endblock %}
 
-    <!-- SIDEBAR -->
-    <aside class="sidebar">
-        <div class="profile">
-            <img src="{% static 'users/img/profile.png' %}">
-            <h4>{{ request.user.get_full_name|default:request.user.username }}</h4>
+{% block content %}
+
+<div class="page-header">
+    <div class="page-header-text">
+        <h1>{{ tipo.nombre }}</h1>
+        <p>Editor de cuestionario</p>
+    </div>
+
+    <div class="page-actions">
+        <a href="{% url 'saq_lista' %}" class="btn-secondary">← Volver</a>
+    </div>
+</div>
+
+<div style="display:flex; gap:20px;">
+
+    <!-- SECCIONES -->
+    <div class="card" style="width:280px; flex-shrink:0;">
+        <div class="card-header">
+            <h3>Secciones</h3>
         </div>
 
-        <nav class="menu">
-            <a href="{% url 'dashboard' %}">Dashboard</a>
-            <a href="{% url 'usuarios_lista' %}">Usuarios</a>
-            <a href="{% url 'entidades_lista' %}">Entidades</a>
-            <a href="{% url 'saq_lista' %}" class="active">SAQ</a>
-            <a href="{% url 'logout' %}">Salir</a>
-        </nav>
-    </aside>
+        <div class="card-body" style="display:flex; flex-direction:column; gap:8px;">
+            {% for s in secciones %}
+            <a href="{% url 'saq_editor_seccion' tipo.pk s.pk %}"
+               class="btn-secondary {% if seccion_activa and s.pk == seccion_activa.pk %}seccion-activa{% endif %}"
+               style="text-align:left;">
+                {{ s.nombre }}
+            </a>
+            {% endfor %}
+        </div>
+    </div>
 
-    <!-- MAIN -->
-    <main class="main-content">
+    <!-- EDITOR -->
+    <div class="card" style="flex:1;">
 
-        <!-- TOPBAR -->
-        <header class="topbar">
-            <a href="{% url 'saq_lista' %}">← Volver</a>
-            <h2>{{ tipo.nombre }}</h2>
-        </header>
+        <div class="card-header">
+            <h3>
+                {% if seccion_activa %}
+                    {{ seccion_activa.nombre }}
+                {% else %}
+                    Selecciona una sección
+                {% endif %}
+            </h3>
 
-        <section class="content">
+            {% if preguntas %}
+            <span style="font-size:13px; color:var(--text-muted);">
+                {{ preguntas|length }} pregunta{{ preguntas|length|pluralize:"s" }}
+            </span>
+            {% endif %}
+        </div>
 
-            <div class="saq-body">
+        <div class="card-body">
 
-                <!-- SECCIONES -->
-                <div class="saq-panel">
-                    <h3>Secciones</h3>
+            {% if seccion_activa %}
 
-                    {% for seccion in secciones %}
-                    <div class="{% if seccion_activa and seccion.pk == seccion_activa.pk %}active{% endif %}">
-                        <a href="{% url 'saq_editor_seccion' tipo.pk seccion.pk %}">
-                            {{ seccion.nombre }} ({{ seccion.preguntas.count }})
-                        </a>
+            <!-- LISTA -->
+            <div id="preguntas-container" style="display:flex; flex-direction:column; gap:10px;">
+
+                {% for p in preguntas %}
+                <div id="pregunta-{{ p.pk }}" class="card" style="padding:12px;">
+
+                    <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:12px;">
+
+                        <span style="font-size:14px; line-height:1.5;">
+                            <strong>{{ p.orden }}.</strong> {{ p.pregunta.texto }}
+
+                            {% if p.pregunta.referencia_pci %}
+                            <br>
+                            <small style="color:var(--text-muted);">
+                                Ref: {{ p.pregunta.referencia_pci }}
+                            </small>
+                            {% endif %}
+                        </span>
+
+                        <button class="btn-icon danger btn-eliminar"
+                                data-id="{{ p.pk }}"
+                                style="flex-shrink:0;">
+                            <i data-feather="trash-2"></i>
+                        </button>
+
                     </div>
-                    {% empty %}
-                    <p>Sin secciones</p>
-                    {% endfor %}
                 </div>
-
-                <!-- PREGUNTAS -->
-                <div class="saq-editor">
-
-                    {% if seccion_activa %}
-
-                        <h3>{{ seccion_activa.nombre }}</h3>
-
-                        <button onclick="agregarPregunta()">+ Agregar pregunta</button>
-
-                        {% if preguntas %}
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>#</th>
-                                    <th>Pregunta</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for entrada in preguntas %}
-                                <tr>
-                                    <td>{{ entrada.orden }}</td>
-                                    <td>{{ entrada.pregunta.texto }}</td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                        {% else %}
-                            <p>No hay preguntas</p>
-                        {% endif %}
-
-                    {% else %}
-                        <p>Selecciona una sección</p>
-                    {% endif %}
-
-                </div>
+                {% empty %}
+                <p style="color:var(--text-muted);">
+                    No hay preguntas en esta sección.
+                </p>
+                {% endfor %}
 
             </div>
 
-        </section>
-    </main>
+            <!-- FORM -->
+            <form id="form-pregunta"
+                  style="margin-top:24px; padding-top:20px; border-top:1px solid var(--border);">
+
+                {% csrf_token %}
+
+                <div class="form-group">
+                    <label>Nueva pregunta</label>
+                    <input type="text" name="texto" required>
+                </div>
+
+                <div class="form-group">
+                    <label>Referencia PCI (opcional)</label>
+                    <input type="text" name="referencia_pci">
+                </div>
+
+                <div class="form-actions">
+                    <button type="submit" class="btn-primary">
+                        + Agregar pregunta
+                    </button>
+                </div>
+
+            </form>
+
+            {% endif %}
+
+        </div>
+    </div>
+
 </div>
 
-<!-- VARIABLES SEGURAS -->
+{% endblock %}
+
+{% block extra_js %}
+
 <script>
-    const tipoId = "{{ tipo.pk }}";
-    const seccionId = "{{ seccion_activa.pk|default:'' }}";
+const CREAR_URL = "{% url 'saq_pregunta_crear' tipo.pk seccion_activa.pk %}";
+const ELIMINAR_BASE = "{% url 'saq_pregunta_eliminar' tipo.pk seccion_activa.pk 1 %}";
 
-    const tipoIdNum = parseInt(tipoId);
-    const seccionIdNum = seccionId ? parseInt(seccionId) : null;
-</script>
+// CREAR
+document.getElementById('form-pregunta')?.addEventListener('submit', function(e) {
+    e.preventDefault();
+    const data = new FormData(this);
 
-<!-- FUNCIÓN AJAX -->
-<script>
-function agregarPregunta() {
-
-    if (!seccionIdNum) {
-        alert("Selecciona una sección primero");
-        return;
-    }
-
-    const texto = prompt("Nueva pregunta:");
-    if (!texto) return;
-
-    fetch(`/saq/${tipoIdNum}/seccion/${seccionIdNum}/pregunta/`, {
+    fetch(CREAR_URL, {
         method: "POST",
-        headers: {
-            "X-CSRFToken": "{{ csrf_token }}",
-            "Content-Type": "application/x-www-form-urlencoded"
-        },
-        body: new URLSearchParams({
-            texto: texto
-        })
+        body: data,
+        headers: { "X-CSRFToken": data.get("csrfmiddlewaretoken") }
     })
     .then(res => res.json())
     .then(data => {
-        if (data.success) {
-            location.reload();
-        } else {
-            alert("Error al guardar");
-        }
+        if (data.success) location.reload();
     });
-}
+});
+
+// ELIMINAR
+document.querySelectorAll('.btn-eliminar').forEach(btn => {
+    btn.addEventListener('click', function() {
+
+        const id = this.dataset.id;
+        const url = ELIMINAR_BASE.replace('/1/', `/${id}/`);
+
+        fetch(url, {
+            method: "POST",
+            headers: {
+                "X-CSRFToken": document.querySelector('[name=csrfmiddlewaretoken]').value
+            }
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                document.getElementById(`pregunta-${id}`).remove();
+            }
+        });
+
+    });
+});
 </script>
 
-<script src="https://unpkg.com/feather-icons"></script>
-<script>feather.replace()</script>
-
-</body>
-</html>
+{% endblock %}

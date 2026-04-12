@@ -4,10 +4,10 @@ import requests
 from django.shortcuts import render, redirect, get_object_or_404
 from django.http import JsonResponse
 from django.contrib.auth import authenticate, login, logout
-from django.contrib.auth.decorators import login_required
+from django.contrib.auth.decorators import login_required, permission_required
 from django.contrib.auth.models import User
-from django.contrib.auth.mixins import UserPassesTestMixin, LoginRequiredMixin
-from django.views.generic import ListView, CreateView, UpdateView, DeleteView, DetailView
+from django.contrib.auth.mixins import PermissionRequiredMixin
+from django.views.generic import ListView, CreateView, UpdateView, DetailView
 from django.views.decorators.http import require_POST
 from django.urls import reverse_lazy
 from django.db.models import Q
@@ -17,32 +17,63 @@ from django.contrib.auth.tokens import default_token_generator
 from django.utils.http import urlsafe_base64_encode
 from django.utils.encoding import force_bytes
 
-from .models import Entidad, TipoSAQ, SeccionSAQ, PreguntaSAQ, PreguntaEnSeccion
+from .models import (
+    Entidad, TipoSAQ, SeccionSAQ,
+    PreguntaSAQ, PreguntaEnSeccion,
+    PreguntaPreTest, RespuestaPreTest
+)
 
 
-# ─── Login / Logout ───────────────────────────────────────
+# ─── AUTH ────────────────────────────────────────────────
 
 def login_view(request):
     if request.method == "POST":
-        username = request.POST.get("username")
-        password = request.POST.get("password")
+        user = authenticate(
+            request,
+            username=request.POST.get("username"),
+            password=request.POST.get("password")
+        )
 
-        user = authenticate(request, username=username, password=password)
-
-        if user is not None:
+        if user:
             login(request, user)
+
+            if request.POST.get("remember"):
+                request.session.set_expiry(60 * 60 * 24 * 30)
+            else:
+                request.session.set_expiry(0)
+
+            request.session.modified = True
+            print(request.POST)
             return redirect("dashboard")
-        else:
-            return render(request, "users/login.html", {
-                "error": "Credenciales incorrectas"
-            })
+
+        return render(request, "users/login.html", {
+            "error": "Credenciales incorrectas"
+        })
 
     return render(request, "users/login.html")
 
-
 @login_required
+@permission_required('users.ver_dashboard', raise_exception=True)
 def dashboard(request):
-    return render(request, "users/dashboard.html")
+    user = request.user
+
+    entidad_activa = Entidad.objects.filter(
+        usuario=user,
+        is_active=True
+    ).exists()
+    
+    context = {
+        "mod_usuarios": user.has_perm("users.ver_usuarios"),
+        "mod_entidades": user.has_perm("users.ver_entidades"),
+        "mod_saq": user.has_perm("users.ver_saq"),
+        "mod_pretest": user.has_perm("users.usar_pretest"),
+        "mod_evidencias": user.has_perm("users.ver_evidencias"),
+        "mod_renovacion": user.has_perm("users.gestionar_renovacion"),
+        
+        "entidad_activa": entidad_activa,
+    }
+
+    return render(request, "users/dashboard.html", context)
 
 
 def logout_view(request):
@@ -50,20 +81,24 @@ def logout_view(request):
     return redirect("login")
 
 
-# ─── Forgot Password ──────────────────────────────────────
+# ─── PASSWORD ────────────────────────────────────────────
 
 def forgot_password(request):
     message = None
 
     if request.method == 'POST':
         email = request.POST.get('email')
+
         try:
             user = User.objects.get(email=email)
+
             token = default_token_generator.make_token(user)
             uid = urlsafe_base64_encode(force_bytes(user.pk))
+
             reset_link = request.build_absolute_uri(
                 f'/reset-password/{uid}/{token}/'
             )
+
             requests.post(
                 'https://api.brevo.com/v3/smtp/email',
                 headers={
@@ -73,26 +108,20 @@ def forgot_password(request):
                 json={
                     'sender': {'name': 'PCI Cert Pro', 'email': 'pcicertpro@outlook.com'},
                     'to': [{'email': email}],
-                    'subject': 'Restablecer contraseña — PCI Cert Pro',
-                    'textContent': f'Haz clic aquí para restablecer tu contraseña:\n\n{reset_link}',
+                    'subject': 'Restablecer contraseña',
+                    'textContent': f'Restablece tu contraseña:\n\n{reset_link}',
                 }
             )
-        except User.DoesNotExist:
-            pass  
 
-        message = 'Si ese correo está registrado, recibirás un enlace en breve.'
+        except User.DoesNotExist:
+            pass
+
+        message = 'Si el correo existe, recibirás un enlace.'
 
     return render(request, 'users/forgot_password.html', {'message': message})
 
 
-# ─── Mixin ────────────────────────────────────────────────
-
-class SoloAdminMixin(UserPassesTestMixin):
-    def test_func(self):
-        return self.request.user.is_superuser
-
-
-# ─── Forms Usuarios ───────────────────────────────────────
+# ─── USUARIOS ────────────────────────────────────────────
 
 class UsuarioCreateForm(UserCreationForm):
     class Meta:
@@ -106,143 +135,125 @@ class UsuarioUpdateForm(forms.ModelForm):
         fields = ["username", "first_name", "last_name", "email", "is_active"]
 
 
-# ─── CRUD Usuarios ────────────────────────────────────────
-
-class UsuarioListView(SoloAdminMixin, ListView):
+class UsuarioListView(PermissionRequiredMixin, ListView):
+    permission_required = "users.ver_usuarios"
     model = User
     template_name = "users/usuarios_lista.html"
     context_object_name = "usuarios"
     paginate_by = 5
 
     def get_queryset(self):
-        queryset = User.objects.all().order_by("-date_joined")
+        qs = User.objects.all().order_by("-date_joined")
         search = self.request.GET.get("buscar")
 
         if search:
-            queryset = queryset.filter(
+            qs = qs.filter(
                 Q(username__icontains=search) |
                 Q(first_name__icontains=search) |
                 Q(last_name__icontains=search) |
                 Q(email__icontains=search)
             )
-        return queryset
+
+        return qs
 
 
-class UsuarioDetalleView(SoloAdminMixin, DetailView):
+class UsuarioDetalleView(PermissionRequiredMixin, DetailView):
+    permission_required = "users.ver_usuarios"
     model = User
     template_name = "users/usuarios_detalle.html"
     context_object_name = "usuario"
 
 
-class UsuarioCreateView(SoloAdminMixin, CreateView):
+class UsuarioCreateView(PermissionRequiredMixin, CreateView):
+    permission_required = "users.gestionar_usuarios"
     model = User
     form_class = UsuarioCreateForm
     template_name = "users/usuarios_form.html"
     success_url = reverse_lazy("usuarios_lista")
 
 
-class UsuarioUpdateView(SoloAdminMixin, UpdateView):
+class UsuarioUpdateView(PermissionRequiredMixin, UpdateView):
+    permission_required = "users.gestionar_usuarios"
     model = User
     form_class = UsuarioUpdateForm
     template_name = "users/usuarios_form.html"
     success_url = reverse_lazy("usuarios_lista")
 
 
-class UsuarioDeleteView(SoloAdminMixin, DeleteView):
-    model = User
-    template_name = "users/usuarios_eliminar.html"
-    success_url = reverse_lazy("usuarios_lista")
-
-
-# ─── Toggle Usuario ───────────────────────────────────────
-
 @login_required
+@permission_required('users.gestionar_usuarios', raise_exception=True)
 def usuario_toggle(request, pk):
     user = get_object_or_404(User, pk=pk)
-
-    if request.user.is_superuser:
-        user.is_active = not user.is_active
-        user.save()
-
+    user.is_active = not user.is_active
+    user.save()
     return redirect("usuarios_lista")
 
 
-# ─── Forms Entidades ──────────────────────────────────────
+# ─── ENTIDADES ───────────────────────────────────────────
 
 class EntidadForm(forms.ModelForm):
     class Meta:
         model = Entidad
-        fields = [
-            "usuario",
-            "nombre_empresa",
-            "dba",
-            "email",
-            "sitio_web",
-            "contacto",
-        ]
+        fields = ["usuario", "nombre_empresa", "dba", "email", "sitio_web", "contacto"]
 
 
-# ─── CRUD Entidades ───────────────────────────────────────
-
-class EntidadListView(SoloAdminMixin, ListView):
+class EntidadListView(PermissionRequiredMixin, ListView):
+    permission_required = "users.ver_entidades"
     model = Entidad
     template_name = "users/entidades_lista.html"
     context_object_name = "entidades"
     paginate_by = 5
 
     def get_queryset(self):
-        queryset = Entidad.objects.select_related("usuario").order_by("-fecha_modificacion")
+        qs = Entidad.objects.select_related("usuario").order_by("-fecha_modificacion")
         search = self.request.GET.get("buscar")
 
         if search:
-            queryset = queryset.filter(
+            qs = qs.filter(
                 Q(nombre_empresa__icontains=search) |
                 Q(dba__icontains=search) |
                 Q(email__icontains=search) |
                 Q(contacto__icontains=search)
             )
 
-        return queryset
+        return qs
 
-
-class EntidadCreateView(SoloAdminMixin, CreateView):
+class EntidadDetalleView(PermissionRequiredMixin, DetailView):
+    permission_required = "users.ver_entidades"
     model = Entidad
-    form_class = EntidadForm
-    template_name = "users/entidades_form.html"
-    success_url = reverse_lazy("entidades_lista")
-
-
-class EntidadUpdateView(SoloAdminMixin, UpdateView):
-    model = Entidad
-    form_class = EntidadForm
-    template_name = "users/entidades_form.html"
-    success_url = reverse_lazy("entidades_lista")
-
-
-# ─── Detalle Entidad ──────────────────────────────────────
-
-class EntidadDetalleView(SoloAdminMixin, DetailView):
-    model = Entidad
-    template_name = "users/entidad_detalle.html"
+    template_name = "users/entidades_detalle.html"
     context_object_name = "entidad"
 
 
-# ─── Toggle Activo Entidad ────────────────────────────────
+class EntidadCreateView(PermissionRequiredMixin, CreateView):
+    permission_required = "users.gestionar_entidades"
+    model = Entidad
+    form_class = EntidadForm
+    template_name = "users/entidades_form.html"
+    success_url = reverse_lazy("entidades_lista")
+
+
+class EntidadUpdateView(PermissionRequiredMixin, UpdateView):
+    permission_required = "users.gestionar_entidades"
+    model = Entidad
+    form_class = EntidadForm
+    template_name = "users/entidades_form.html"
+    success_url = reverse_lazy("entidades_lista")
+
 
 @login_required
+@permission_required('users.gestionar_entidades', raise_exception=True)
 def entidad_toggle(request, pk):
     entidad = get_object_or_404(Entidad, pk=pk)
-
-    if request.user.is_superuser:
-        entidad.is_active = not entidad.is_active
-        entidad.save()
-
+    entidad.is_active = not entidad.is_active
+    entidad.save()
     return redirect("entidades_lista")
 
 
-# ─── SAQ ──────────────────────────────────────────────────
+# ─── SAQ ────────────────────────────────────────────────
 
 @login_required
+@permission_required('users.ver_saq', raise_exception=True)
 def saq_lista(request):
     return render(request, "users/saq_lista.html", {
         "tipos": TipoSAQ.objects.all()
@@ -250,60 +261,143 @@ def saq_lista(request):
 
 
 @login_required
+@permission_required('users.ver_saq', raise_exception=True)
 def saq_editor(request, tipo_pk, seccion_pk=None):
     tipo = get_object_or_404(TipoSAQ, pk=tipo_pk)
-    secciones = tipo.secciones.all()
-
-    seccion_activa = None
-    preguntas = []
+    secciones = tipo.secciones.order_by("orden")
 
     if seccion_pk:
         seccion_activa = get_object_or_404(SeccionSAQ, pk=seccion_pk)
-        preguntas = PreguntaEnSeccion.objects.filter(
-            seccion=seccion_activa
-        ).select_related("pregunta")
+    else:
+        seccion_activa = secciones.first()
+        if seccion_activa:
+            return redirect("saq_editor_seccion", tipo_pk=tipo_pk, seccion_pk=seccion_activa.pk)
+
+    preguntas = PreguntaEnSeccion.objects.filter(
+        seccion=seccion_activa
+    ).select_related("pregunta").order_by("orden") if seccion_activa else []
 
     return render(request, "users/saq_editor.html", {
         "tipo": tipo,
         "secciones": secciones,
         "seccion_activa": seccion_activa,
-        "preguntas": preguntas
+        "preguntas": preguntas,
     })
 
 
-# 🔥 AJAX crea la pregunta
 @login_required
+@permission_required('users.editar_saq', raise_exception=True)
 @require_POST
-def crear_pregunta(request, tipo_pk, seccion_pk):
-
-    tipo = get_object_or_404(TipoSAQ, pk=tipo_pk)
+def saq_pregunta_crear(request, tipo_pk, seccion_pk):
     seccion = get_object_or_404(SeccionSAQ, pk=seccion_pk)
+    texto = request.POST.get("texto", "").strip()
+    referencia = request.POST.get("referencia_pci", "").strip()
 
-    texto = request.POST.get("texto")
-    ref = request.POST.get("referencia_pci")
+    if texto:
+        pregunta = PreguntaSAQ.objects.create(
+            texto=texto,
+            referencia_pci=referencia
+        )
+        orden = PreguntaEnSeccion.objects.filter(seccion=seccion).count() + 1
+        PreguntaEnSeccion.objects.create(
+            pregunta=pregunta,
+            seccion=seccion,
+            orden=orden
+        )
+        return JsonResponse({"success": True})
 
-    if not texto:
-        return JsonResponse({"success": False})
+    return JsonResponse({"success": False})
 
-    # Reutiliza la pregunta si ya existe
-    pregunta, created = PreguntaSAQ.objects.get_or_create(
-        texto=texto,
-        defaults={"referencia_pci": ref}
-    )
 
-    # Asocia a untipo SAQ
-    pregunta.tipos_saq.add(tipo)
+@login_required
+@permission_required('users.editar_saq', raise_exception=True)
+@require_POST
+def saq_pregunta_eliminar(request, tipo_pk, seccion_pk, pregunta_pk):
+    pes = get_object_or_404(PreguntaEnSeccion, pk=pregunta_pk)
+    pes.delete()
+    return JsonResponse({"success": True})
 
-    orden = PreguntaEnSeccion.objects.filter(seccion=seccion).count() + 1
 
-    PreguntaEnSeccion.objects.create(
-        pregunta=pregunta,
-        seccion=seccion,
-        orden=orden
-    )
+# ─── PRETEST ─────────────────────────────────────────────
 
-    return JsonResponse({
-        "success": True,
-        "texto": pregunta.texto,
-        "orden": orden
+@login_required
+def pretest_home(request):
+
+    if not (request.user.is_superuser or request.user.has_perm('users.usar_pretest')):
+        return redirect("dashboard")
+
+    entidad_activa = Entidad.objects.filter(
+        usuario=request.user,
+        is_active=True
+    ).exists()
+
+    return render(request, "users/pretest_home.html", {
+        "entidad_activa": entidad_activa
+    })
+
+@login_required
+@permission_required('users.usar_pretest', raise_exception=True)
+def pretest(request):
+
+    entidad = Entidad.objects.filter(
+        usuario=request.user,
+        is_active=True
+    ).first()
+
+    if not entidad:
+        logout(request)
+        return redirect("login")
+
+    preguntas = PreguntaPreTest.objects.all().order_by('numero')
+
+    if request.method == "POST":
+        for p in preguntas:
+            val = request.POST.get(f"p_{p.id}")
+            if val:
+                RespuestaPreTest.objects.update_or_create(
+                    usuario=request.user,
+                    pregunta=p,
+                    defaults={"respuesta": val}
+                )
+        return redirect("pretest_resultado")
+
+    return render(request, "users/pretest.html", {
+        "preguntas": preguntas
+    })
+
+@login_required
+@permission_required('users.usar_pretest', raise_exception=True)
+def pretest_resultado(request):
+
+    entidad = Entidad.objects.filter(
+        usuario=request.user,
+        is_active=True
+    ).first()
+
+    if not entidad:
+        logout(request)
+        return redirect("login")
+
+    respuestas = RespuestaPreTest.objects.filter(
+        usuario=request.user
+    ).select_related("pregunta")
+
+    total = respuestas.count()
+    si_count = respuestas.filter(respuesta="SI").count()
+    no_count = respuestas.filter(respuesta="NO").count()
+
+    saq_scores = {}
+    for r in respuestas:
+        if r.respuesta == "SI":
+            saq = r.pregunta.saq_destino
+            saq_scores[saq] = saq_scores.get(saq, 0) + 1
+
+    recomendacion = max(saq_scores, key=saq_scores.get) if saq_scores else "No determinado"
+
+    return render(request, "users/pretest_resultado.html", {
+        "total": total,
+        "si": si_count,
+        "no": no_count,
+        "recomendacion": recomendacion,
+        "saq_scores": saq_scores,
     })

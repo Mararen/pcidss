@@ -1,0 +1,97 @@
+{% extends 'users/base.html' %}
+{% load static %}
+
+{% block title %}{{ usuario.username }} | Usuario{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+    <div class="page-header-text">
+        <h1>{{ usuario.get_full_name|default:usuario.username }}</h1>
+        <p>Detalle del usuario y configuración de acceso.</p>
+    </div>
+
+    <div class="page-actions">
+        <a href="{% url 'usuarios_lista' %}" class="btn-secondary">← Volver</a>
+        <a href="{% url 'usuario_editar' usuario.pk %}" class="btn-primary">Editar</a>
+    </div>
+</div>
+
+<div class="card">
+
+    <div class="card-header">
+        <h3>Información general</h3>
+    </div>
+
+    <div class="card-body">
+
+        <div class="detail-row">
+            <span class="label">Usuario</span>
+            <span class="value">{{ usuario.username }}</span>
+        </div>
+
+        <div class="detail-row">
+            <span class="label">Nombre completo</span>
+            <span class="value">{{ usuario.get_full_name }}</span>
+        </div>
+
+        <div class="detail-row">
+            <span class="label">Email</span>
+            <span class="value">{{ usuario.email }}</span>
+        </div>
+
+        <div class="detail-row">
+            <span class="label">Estado</span>
+            <span class="value">
+                {% if usuario.is_active %}
+                    <span class="badge badge-success">Activo</span>
+                {% else %}
+                    <span class="badge badge-danger">Inactivo</span>
+                {% endif %}
+            </span>
+        </div>
+
+        <div class="detail-row">
+            <span class="label">Rol</span>
+            <span class="value">
+                {% if usuario.is_superuser %}
+                    Administrador Global
+                {% else %}
+                    {{ usuario.groups.first.name|default:"Usuario" }}
+                {% endif %}
+            </span>
+        </div>
+
+    </div>
+</div>
+
+{% if usuario.entidad %}
+<div class="card" style="margin-top:20px;">
+
+    <div class="card-header">
+        <h3>Entidad asociada</h3>
+    </div>
+
+    <div class="card-body">
+
+        <div class="detail-row">
+            <span class="label">Empresa</span>
+            <span class="value">{{ usuario.entidad.nombre_empresa }}</span>
+        </div>
+
+        <div class="detail-row">
+            <span class="label">Email</span>
+            <span class="value">{{ usuario.entidad.email }}</span>
+        </div>
+
+        <div style="margin-top:15px;">
+            <a href="{% url 'entidades_detalle' usuario.entidad.pk %}" class="btn-secondary">
+                Ver entidad →
+            </a>
+        </div>
+
+    </div>
+</div>
+{% endif %}
+
+{% endblock %}

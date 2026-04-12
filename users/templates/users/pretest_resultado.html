@@ -1,0 +1,18 @@
+{% extends 'users/base.html' %}
+{% load static %}
+
+{% block title %}Resultado Pre-Test{% endblock %}
+
+{% block content %}
+
+<h1>Resultado</h1>
+
+<h2>{{ recomendacion }}</h2>
+
+<p>Total: {{ total }}</p>
+<p>SI: {{ si }}</p>
+<p>NO: {{ no }}</p>
+
+<a href="{% url 'pretest' %}">Repetir</a>
+
+{% endblock %}
