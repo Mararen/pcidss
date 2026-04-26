@@ -1,0 +1,19 @@
+<form method="post" action="{% url 'control_edit' control.id %}">
+  {% csrf_token %}
+  <label>Código</label>
+  <input name="codigo" value="{{ control.codigo }}" required>
+
+  <label>Descripción</label>
+  <textarea name="descripcion" required>{{ control.descripcion }}</textarea>
+
+  <label>Requisito PCI</label>
+  <select name="requisito" required>
+    {% for r in requisitos %}
+      <option value="{{ r.id }}" {% if control.requisito_id == r.id %}selected{% endif %}>
+        {{ r.codigo }} - {{ r.nombre }}
+      </option>
+    {% endfor %}
+  </select>
+
+  <button type="submit">Guardar</button>
+</form>

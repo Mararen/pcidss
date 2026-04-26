@@ -13,9 +13,13 @@
     <form method="post">
         {% csrf_token %}
         {{ form.as_p }}
-        <div class="form-actions">
-            <a href="{% url 'entidades_lista' %}">Cancelar</a>
-            <button type="submit">Guardar</button>
+				<div class="form-actions">
+                <button type="submit" class="btn-primary">
+                    Guardar
+                </button>
+				<a href="{% url 'entidades_lista' %}" class="btn-secondary">
+                    Cancelar
+                </a>
         </div>
     </form>
 </div>

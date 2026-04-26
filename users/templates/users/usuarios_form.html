@@ -7,7 +7,6 @@
 
 {% block content %}
 
-<!-- HEADER -->
 <div class="page-header">
     <div class="page-header-text">
         <h1>
@@ -27,7 +26,6 @@
     </div>
 </div>
 
-<!-- FORM CARD -->
 <div class="card" style="max-width:700px;">
 
     <div class="card-header">
@@ -42,28 +40,41 @@
             <div class="form-grid">
 
                 {% for field in form %}
-                <div class="form-group">
-                    <label>{{ field.label }}</label>
-                    {{ field }}
+                    {% if field.name != "rol" %}
+                    <div class="form-group">
+                        <label>{{ field.label }}</label>
+                        {{ field }}
 
-                    {% if field.errors %}
+                        {% if field.errors %}
+                            <div class="login-error">
+                                {{ field.errors }}
+                            </div>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                {% endfor %}
+
+                <!-- Rol separado -->
+                <div class="form-group">
+                    <label>Rol</label>
+                    {{ form.rol }}
+
+                    {% if form.rol.errors %}
                         <div class="login-error">
-                            {{ field.errors }}
+                            {{ form.rol.errors }}
                         </div>
                     {% endif %}
                 </div>
-                {% endfor %}
 
             </div>
 
             <div class="form-actions">
+				<button type="submit" class="btn-primary">
+                    Guardar
+                </button>
                 <a href="{% url 'usuarios_lista' %}" class="btn-secondary">
                     Cancelar
                 </a>
-
-                <button type="submit" class="btn-primary">
-                    Guardar
-                </button>
             </div>
 
         </form>

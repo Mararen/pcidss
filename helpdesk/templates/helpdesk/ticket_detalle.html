@@ -1,0 +1,86 @@
+{% extends 'users/base.html' %}
+{% load static %}
+
+{% extends 'users/base.html' %}
+
+{% block content %}
+<h1>{{ ticket.titulo }}</h1>
+
+<p>{{ ticket.descripcion }}</p>
+<p><strong>Estado:</strong> {{ ticket.estado }}</p>
+
+<div class="page-header">
+    <h1>Ticket #{{ ticket.id }}</h1>
+</div>
+
+<div class="ticket-detail">
+
+    <!-- IZQUIERDA -->
+    <div>
+
+        <div class="card">
+            <div class="card-header">
+                <h3>{{ ticket.titulo }}</h3>
+            </div>
+
+            <p>{{ ticket.descripcion }}</p>
+        </div>
+
+        <div class="ticket-comments">
+            <h3>Comentarios</h3>
+
+            {% for c in comentarios %}
+            <div class="comment">
+                <strong>{{ c.usuario.username }}</strong>
+                <small>{{ c.fecha }}</small>
+
+                <p>{{ c.comentario }}</p>
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- FORM -->
+        <div class="card">
+            <form method="post" action="{% url 'helpdesk:agregar_comentario' ticket.id %}">
+                {% csrf_token %}
+
+                <textarea name="comentario" required></textarea>
+
+                <div class="form-actions">
+                    <button class="btn-primary">Comentar</button>
+                </div>
+            </form>
+        </div>
+
+    </div>
+
+    <!-- DERECHA -->
+    <div class="ticket-sidebar">
+
+        <div class="card">
+            <div class="detail-row">
+                <span class="label">Estado</span>
+                <span class="badge badge-estado-{{ ticket.estado }}">
+                    {{ ticket.get_estado_display }}
+                </span>
+            </div>
+
+            <div class="detail-row">
+                <span class="label">Prioridad</span>
+                <span class="badge badge-priority-{{ ticket.prioridad }}">
+                    {{ ticket.get_prioridad_display }}
+                </span>
+            </div>
+
+            <div class="detail-row">
+                <span class="label">Usuario</span>
+                <span class="value">{{ ticket.usuario }}</span>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+{% endblock %}

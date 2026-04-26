@@ -1,0 +1,124 @@
+{% extends 'users/base.html' %}
+{% load static %}
+{% load saq_tags %}
+
+{% block title %}Banco de Preguntas SAQ | PCI Cert Pro{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+  <div class="page-header-text">
+    <h1>Banco de Preguntas SAQ</h1>
+    <p>PCI DSS v4.0.1 &nbsp;·&nbsp; {{ conteos.ALL }} preguntas activas</p>
+  </div>
+  <a href="{% url 'saq:saq_crear' %}" class="btn-primary">
+    <i data-feather="plus"></i> Nueva pregunta
+  </a>
+</div>
+
+<div class="saq-layout">
+
+  {# ── SIDEBAR DE TIPOS ─────────────────────────────────────── #}
+  <aside class="saq-sidebar">
+    <a href="{% url 'saq:saq_lista' %}"
+       class="saq-sidebar-link {% if not tipo_filtro %}active{% endif %}">
+      Todos
+      <span class="saq-sidebar-count">{{ conteos.ALL }}</span>
+    </a>
+    {% for tipo, label in tipos %}
+    <a href="?tipo={{ tipo }}"
+       class="saq-sidebar-link {% if tipo_filtro == tipo %}active{% endif %}">
+      {{ tipo }}
+      <span class="saq-sidebar-count">{{ conteos|get_item:tipo }}</span>
+    </a>
+    {% endfor %}
+  </aside>
+
+  {# ── CONTENIDO PRINCIPAL ──────────────────────────────────── #}
+  <section class="saq-main">
+
+    {# Buscador #}
+    <form method="get" class="search-bar">
+      {% if tipo_filtro %}
+        <input type="hidden" name="tipo" value="{{ tipo_filtro }}">
+      {% endif %}
+      <input type="text" name="buscar" value="{{ buscar }}"
+             placeholder="Buscar en texto de pregunta…" class="form-input search-input">
+      <button type="submit" class="btn-secondary">
+        <i data-feather="search"></i> Buscar
+      </button>
+      {% if buscar %}
+        <a href="?{% if tipo_filtro %}tipo={{ tipo_filtro }}{% endif %}" class="btn-ghost">
+          <i data-feather="x"></i> Limpiar
+        </a>
+      {% endif %}
+    </form>
+
+    {# Tabla de preguntas #}
+    <div class="table-wrapper">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th style="width:60px">#</th>
+            <th style="width:90px">SAQ</th>
+            <th style="width:130px">Tipo input</th>
+            <th>Pregunta</th>
+            <th style="width:100px" class="text-right">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for p in page_obj %}
+          <tr>
+            <td>{{ p.numero }}</td>
+            <td>
+              <span class="saq-chip saq-chip--{{ p.tipo_saq|lower }}">{{ p.tipo_saq }}</span>
+            </td>
+            <td>
+              <span class="badge badge--neutral">{{ p.get_tipo_input_display }}</span>
+            </td>
+            <td class="text-truncate" title="{{ p.pregunta_es }}">
+              {{ p.pregunta_es|truncatechars:90 }}
+            </td>
+            <td class="text-right">
+              <a href="{% url 'saq:saq_editar' p.pk %}"
+                 class="icon-btn" title="Editar">
+                <i data-feather="edit-2"></i>
+              </a>
+              <a href="{% url 'saq:saq_eliminar' p.pk %}"
+                 class="icon-btn icon-btn--danger" title="Eliminar">
+                <i data-feather="trash-2"></i>
+              </a>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="5" class="empty-state">
+              No se encontraron preguntas con los filtros actuales.
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    {# Paginación #}
+    {% if page_obj.has_other_pages %}
+    <div class="pagination">
+      {% if page_obj.has_previous %}
+        <a href="?page={{ page_obj.previous_page_number }}{% if tipo_filtro %}&tipo={{ tipo_filtro }}{% endif %}{% if buscar %}&buscar={{ buscar }}{% endif %}"
+           class="btn-ghost">← Anterior</a>
+      {% endif %}
+      <span class="page-info">
+        Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}
+      </span>
+      {% if page_obj.has_next %}
+        <a href="?page={{ page_obj.next_page_number }}{% if tipo_filtro %}&tipo={{ tipo_filtro }}{% endif %}{% if buscar %}&buscar={{ buscar }}{% endif %}"
+           class="btn-ghost">Siguiente →</a>
+      {% endif %}
+    </div>
+    {% endif %}
+
+  </section>
+</div>
+
+{% endblock %}

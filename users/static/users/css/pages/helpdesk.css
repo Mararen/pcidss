@@ -1,0 +1,94 @@
+/* ─── LISTA DE TICKETS ───────────────────────────── */
+
+.ticket-title a {
+    text-decoration: none;
+    color: var(--primary-dark);
+    font-weight: 500;
+}
+
+.ticket-title a:hover {
+    text-decoration: underline;
+}
+
+/* ─── PRIORIDADES ───────────────────────────── */
+
+.badge-priority-baja {
+    background: #eef7ff;
+    color: #2563eb;
+}
+
+.badge-priority-media {
+    background: #fff7e6;
+    color: #b45309;
+}
+
+.badge-priority-alta {
+    background: #fdecea;
+    color: #dc2626;
+}
+
+.badge-priority-critica {
+    background: #2b0a0a;
+    color: #ff4d4f;
+}
+
+/* ─── ESTADOS ───────────────────────────── */
+
+.badge-estado-abierto {
+    background: var(--primary-light);
+    color: var(--primary-dark);
+}
+
+.badge-estado-proceso {
+    background: #fff7e6;
+    color: #b45309;
+}
+
+.badge-estado-resuelto {
+    background: var(--success-bg);
+    color: var(--success);
+}
+
+.badge-estado-cerrado {
+    background: var(--border-light);
+    color: var(--text-muted);
+}
+
+/* ─── DETALLE DEL TICKET ───────────────────────────── */
+
+.ticket-detail {
+    display: grid;
+    grid-template-columns: 1fr 350px;
+    gap: 20px;
+}
+
+.ticket-comments {
+    margin-top: 20px;
+}
+
+.comment {
+    background: white;
+    border-radius: var(--radius-sm);
+    padding: 12px 14px;
+    margin-bottom: 10px;
+    box-shadow: var(--shadow-sm);
+}
+
+.comment small {
+    color: var(--text-muted);
+    font-size: 12px;
+}
+
+/* ─── SIDEBAR INFO ───────────────────────────── */
+
+.ticket-sidebar .card {
+    margin-bottom: 15px;
+}
+
+/* ─── RESPONSIVE ───────────────────────────── */
+
+@media (max-width: 900px) {
+    .ticket-detail {
+        grid-template-columns: 1fr;
+    }
+}

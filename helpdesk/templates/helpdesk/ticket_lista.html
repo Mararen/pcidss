@@ -1,0 +1,58 @@
+{% extends 'users/base.html' %}
+{% load static %}
+
+{% block content %}
+
+<div class="page-header">
+    <div class="page-header-text">
+        <h1>Tickets</h1>
+        <p>Gestión de incidencias</p>
+    </div>
+
+    <div class="page-actions">
+        <a href="{% url 'helpdesk:ticket_nuevo' %}" class="btn-primary">
+            Nuevo ticket
+        </a>
+    </div>
+</div>
+
+<table class="modern-table">
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Título</th>
+            <th>Estado</th>
+            <th>Prioridad</th>
+            <th>Entidad</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for t in tickets %}
+        <tr>
+            <td>#{{ t.id }}</td>
+
+            <td class="ticket-title">
+                <a href="{% url 'helpdesk:ticket_detalle' t.pk %}">
+                    {{ t.titulo }}
+                </a>
+            </td>
+
+            <td>
+                <span class="badge badge-estado-{{ t.estado }}">
+                    {{ t.get_estado_display }}
+                </span>
+            </td>
+
+            <td>
+                <span class="badge badge-priority-{{ t.prioridad }}">
+                    {{ t.get_prioridad_display }}
+                </span>
+            </td>
+
+            <td>{{ t.entidad.nombre_empresa }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+{% endblock %}

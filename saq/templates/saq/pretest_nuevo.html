@@ -1,0 +1,48 @@
+{% extends 'users/base.html' %}
+{% load static %}
+
+{% block title %}Nuevo PreTest | PCI Cert Pro{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+  <div class="page-header-text">
+    <h1>Nuevo PreTest</h1>
+    <p>Selecciona la entidad para iniciar el cuestionario de orientación SAQ.</p>
+  </div>
+  <a href="{% url 'saq:pretest_lista' %}" class="btn-secondary">
+    <i data-feather="arrow-left"></i> Volver
+  </a>
+</div>
+
+<div class="form-card" style="max-width:520px">
+
+  <form method="post">
+    {% csrf_token %}
+
+    <div class="form-group">
+      <label for="id_entidad">Entidad <span class="required">*</span></label>
+      <select id="id_entidad" name="entidad" class="form-input" required>
+        <option value="">— Selecciona una entidad —</option>
+        {% for e in entidades %}
+        <option value="{{ e.pk }}">{{ e.nombre_empresa }}</option>
+        {% endfor %}
+      </select>
+      {% if not entidades %}
+      <small class="form-hint text-warning">
+        No hay entidades activas. Crea una entidad primero.
+      </small>
+      {% endif %}
+    </div>
+
+    <div class="form-actions">
+      <a href="{% url 'saq:pretest_lista' %}" class="btn-secondary">Cancelar</a>
+      <button type="submit" class="btn-primary" {% if not entidades %}disabled{% endif %}>
+        <i data-feather="play"></i> Iniciar PreTest
+      </button>
+    </div>
+
+  </form>
+</div>
+
+{% endblock %}

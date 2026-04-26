@@ -1,0 +1,118 @@
+{% extends 'users/base.html' %}
+{% load static %}
+
+{% block title %}PreTests | PCI Cert Pro{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+  <div class="page-header-text">
+    <h1>PreTests</h1>
+    <p>Cuestionarios de orientación SAQ PCI DSS v4.0.1</p>
+  </div>
+  <a href="{% url 'saq:pretest_nuevo' %}" class="btn-primary">
+    <i data-feather="plus"></i> Nuevo PreTest
+  </a>
+</div>
+
+{# ── Filtro por entidad ───────────────────────────────────────── #}
+<form method="get" class="filter-bar">
+  <select name="entidad" class="form-input" onchange="this.form.submit()"
+          style="max-width:280px">
+    <option value="">Todas las entidades</option>
+    {% for e in entidades %}
+    <option value="{{ e.pk }}"
+      {% if entidad_id == e.pk|stringformat:"s" %}selected{% endif %}>
+      {{ e.nombre_empresa }}
+    </option>
+    {% endfor %}
+  </select>
+  {% if entidad_id %}
+  <a href="{% url 'saq:pretest_lista' %}" class="btn-ghost">
+    <i data-feather="x"></i> Limpiar filtro
+  </a>
+  {% endif %}
+</form>
+
+{# ── Tabla ────────────────────────────────────────────────────── #}
+<div class="table-wrapper">
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th style="width:60px">ID</th>
+        <th>Entidad</th>
+        <th style="width:120px">Estado</th>
+        <th style="width:100px">SAQ</th>
+        <th style="width:160px">Creado</th>
+        <th style="width:80px">Creado por</th>
+        <th style="width:130px" class="text-right">Acciones</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for pt in page_obj %}
+      <tr>
+        <td>#{{ pt.pk }}</td>
+        <td>{{ pt.entidad.nombre_empresa }}</td>
+        <td>
+          {% if pt.estado == 'completado' %}
+            <span class="badge badge--success">Completado</span>
+          {% else %}
+            <span class="badge badge--warning">En progreso</span>
+          {% endif %}
+        </td>
+        <td>
+          {% if pt.saq_recomendado %}
+            <span class="saq-chip saq-chip--{{ pt.saq_recomendado|lower }}">
+              {{ pt.saq_recomendado }}
+            </span>
+          {% else %}
+            <span class="text-muted">—</span>
+          {% endif %}
+        </td>
+        <td>{{ pt.fecha_creacion|date:"d/m/Y H:i" }}</td>
+        <td>{{ pt.creado_por.get_full_name|default:pt.creado_por.username|default:"—" }}</td>
+        <td class="text-right">
+          <a href="{% url 'saq:pretest_cuestionario' pt.pk %}"
+             class="icon-btn" title="Continuar cuestionario">
+            <i data-feather="edit-3"></i>
+          </a>
+          <a href="{% url 'saq:pretest_eliminar' pt.pk %}"
+            class="icon-btn icon-btn--danger" title="Eliminar PreTest">
+            <i data-feather="trash-2"></i>
+          </a>
+          <a href="{% url 'saq:pretest_resultados' pt.pk %}"
+             class="icon-btn" title="Ver resultados">
+            <i data-feather="bar-chart-2"></i>
+          </a>
+        </td>
+      </tr>
+      {% empty %}
+      <tr>
+        <td colspan="7" class="empty-state">
+          No hay PreTests registrados.
+          <a href="{% url 'saq:pretest_nuevo' %}">Crear el primero →</a>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{# ── Paginación ───────────────────────────────────────────────── #}
+{% if page_obj.has_other_pages %}
+<div class="pagination">
+  {% if page_obj.has_previous %}
+    <a href="?page={{ page_obj.previous_page_number }}{% if entidad_id %}&entidad={{ entidad_id }}{% endif %}"
+       class="btn-ghost">← Anterior</a>
+  {% endif %}
+  <span class="page-info">
+    Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}
+  </span>
+  {% if page_obj.has_next %}
+    <a href="?page={{ page_obj.next_page_number }}{% if entidad_id %}&entidad={{ entidad_id }}{% endif %}"
+       class="btn-ghost">Siguiente →</a>
+  {% endif %}
+</div>
+{% endif %}
+
+{% endblock %}

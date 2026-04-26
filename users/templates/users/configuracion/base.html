@@ -1,0 +1,32 @@
+{% extends 'users/base.html' %}
+
+{% block title %}Configuración{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+    <div class="page-header-text">
+        <h1>Configuración</h1>
+        <p>Administra los parámetros del sistema.</p>
+    </div>
+</div>
+
+<div class="config-tabs">
+    <a href="{% url 'config_general' %}" class="{% if request.path == '/configuracion/general/' %}active{% endif %}">
+        General
+    </a>
+
+    <a href="{% url 'config_seguridad' %}" class="{% if request.path == '/configuracion/seguridad/' %}active{% endif %}">
+        Seguridad
+    </a>
+
+    <a href="{% url 'config_notificaciones' %}" class="{% if request.path == '/configuracion/notificaciones/' %}active{% endif %}">
+        Notificaciones
+    </a>
+</div>
+
+<div class="config-content">
+    {% block config_content %}{% endblock %}
+</div>
+
+{% endblock %}

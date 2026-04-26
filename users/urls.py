@@ -1,9 +1,8 @@
-from django.urls import path
+from django.urls import path, include
 from django.contrib.auth import views as auth_views
 from . import views
 
 urlpatterns = [
-
     # AUTH
     path('', views.login_view, name='login'),
     path('dashboard/', views.dashboard, name='dashboard'),
@@ -20,6 +19,11 @@ urlpatterns = [
         name='password_reset_confirm'
     ),
 
+    # CONFIGURACIÓN
+    path('configuracion/general/', views.configuracion_general, name='config_general'),
+    path('configuracion/seguridad/', views.configuracion_seguridad, name='config_seguridad'),
+    path('configuracion/notificaciones/', views.configuracion_notificaciones, name='config_notificaciones'),
+
     # USUARIOS
     path('usuarios/', views.UsuarioListView.as_view(), name='usuarios_lista'),
     path('usuarios/nuevo/', views.UsuarioCreateView.as_view(), name='usuario_crear'),
@@ -33,16 +37,5 @@ urlpatterns = [
     path('entidades/<int:pk>/', views.EntidadDetalleView.as_view(), name='entidades_detalle'),
     path('entidades/<int:pk>/editar/', views.EntidadUpdateView.as_view(), name='entidad_editar'),
     path('entidades/<int:pk>/toggle/', views.entidad_toggle, name='entidad_toggle'),
-
-    # SAQ
-    path('saq/', views.saq_lista, name='saq_lista'),
-    path('saq/<int:tipo_pk>/', views.saq_editor, name='saq_editor'),
-    path('saq/<int:tipo_pk>/seccion/<int:seccion_pk>/', views.saq_editor, name='saq_editor_seccion'),
-    path('saq/<int:tipo_pk>/seccion/<int:seccion_pk>/pregunta/crear/', views.saq_pregunta_crear, name='saq_pregunta_crear'),
-    path('saq/<int:tipo_pk>/seccion/<int:seccion_pk>/pregunta/<int:pregunta_pk>/eliminar/', views.saq_pregunta_eliminar, name='saq_pregunta_eliminar'),
-
-    # PRETEST
-    path('pretest/', views.pretest_home, name='pretest_home'),
-    path('pretest/iniciar/', views.pretest, name='pretest'),
-    path('pretest/resultado/', views.pretest_resultado, name='pretest_resultado'),
+    
 ]

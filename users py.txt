@@ -1,0 +1,1272 @@
+users/views.py
+
+import os
+import json
+import requests
+from datetime import date
+
+from django.shortcuts import render, redirect, get_object_or_404
+from django.http import JsonResponse
+from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth.decorators import login_required, permission_required
+from django.contrib.auth.models import User, Group
+from django.contrib.auth.mixins import PermissionRequiredMixin
+from django.views.generic import ListView, CreateView, UpdateView, DetailView
+from django.urls import reverse_lazy
+from django.db.models import Q
+from django import forms
+from django.contrib.auth.forms import UserCreationForm
+from django.contrib.auth.tokens import default_token_generator
+from django.utils.http import urlsafe_base64_encode
+from django.utils.encoding import force_bytes
+
+from .models import (
+    Entidad,
+    RequisitoPCI, ControlPCI, RespuestaSAQ,
+    PreguntaPreTest, RespuestaPreTest,
+    ConfiguracionGeneral, PoliticaSeguridad, NotificacionConfig, LogAuditoria,
+    TipoSAQ, ReglaPrellenado,
+    AOCDocumento,
+)
+
+# ─── MOTOR DE REGLAS ─────────────────────────────────────
+
+def evaluar_condiciones(condiciones, perfil):
+    for key, value in condiciones.items():
+        if perfil.get(key) != value:
+            return False
+    return True
+
+
+def prellenar_saq(usuario, entidad, tipo_saq, perfil):
+    controles = ControlPCI.objects.filter(
+        saq_links__tipo_saq=tipo_saq
+    ).distinct()
+
+    for control in controles:
+        if perfil["almacena"]:
+            respuesta = "NO"
+        elif perfil["tercero"] and not perfil["procesa"]:
+            respuesta = "IN_PLACE"
+        elif perfil["iframe"]:
+            respuesta = "IN_PLACE"
+        else:
+            respuesta = "CCW"
+
+        RespuestaSAQ.objects.update_or_create(
+            usuario=usuario,
+            entidad=entidad,
+            control=control,
+            defaults={
+                "respuesta": respuesta,
+                "comentario": "Prellenado automático por PreTest"
+            }
+        )
+
+
+# ─── AUTENTICACIÓN ──────────────────────────────────────
+
+def login_view(request):
+    if request.method == "POST":
+        username = request.POST.get("username")
+        password = request.POST.get("password")
+        user = authenticate(request, username=username, password=password)
+
+        if user:
+            login(request, user)
+            registrar_log(request, "LOGIN", "AUTH", f"Usuario {user.username} inició sesión")
+            response = redirect("dashboard")
+
+            if request.POST.get("remember"):
+                request.session.set_expiry(60 * 60 * 24 * 30)
+                response.set_cookie(
+                    "remember_user", username,
+                    max_age=60*60*24*30, httponly=True, samesite='Lax'
+                )
+            return response
+
+        return render(request, "users/login.html", {"error": "Credenciales incorrectas"})
+
+    return render(request, "users/login.html", {
+        "remembered_user": request.COOKIES.get("remember_user", "")
+    })
+
+
+@login_required
+@permission_required('users.ver_dashboard', raise_exception=True)
+def dashboard(request):
+    user = request.user
+    entidad_activa = Entidad.objects.filter(usuario=user, is_active=True).exists()
+
+    return render(request, "users/dashboard.html", {
+        "mod_usuarios":  user.has_perm("users.ver_usuarios"),
+        "mod_entidades": user.has_perm("users.ver_entidades"),
+        "mod_saq":       user.has_perm("users.ver_saq"),
+        "mod_pretest":   user.has_perm("users.usar_pretest"),
+        "mod_evidencias":user.has_perm("users.ver_evidencias"),
+        "mod_renovacion":user.has_perm("users.gestionar_renovacion"),
+        "mod_aoc":       user.has_perm("users.ver_aoc"),
+        "entidad_activa": entidad_activa,
+    })
+
+
+def logout_view(request):
+    registrar_log(request, "LOGOUT", "AUTH", f"Usuario {request.user.username} cerró sesión")
+    logout(request)
+    return redirect("login")
+
+
+# ─── PASSWORD ───────────────────────────────────────────
+
+def forgot_password(request):
+    message = None
+
+    if request.method == 'POST':
+        email = request.POST.get('email')
+        try:
+            user = User.objects.get(email=email)
+            token = default_token_generator.make_token(user)
+            uid = urlsafe_base64_encode(force_bytes(user.pk))
+            reset_link = request.build_absolute_uri(f'/reset-password/{uid}/{token}/')
+            requests.post(
+                'https://api.brevo.com/v3/smtp/email',
+                headers={
+                    'api-key': os.environ.get('BREVO_API_KEY'),
+                    'Content-Type': 'application/json',
+                },
+                json={
+                    'sender': {'name': 'PCI Cert Pro', 'email': 'pcicertpro@outlook.com'},
+                    'to': [{'email': email}],
+                    'subject': 'Restablecer contraseña',
+                    'textContent': f'Restablece tu contraseña:\n\n{reset_link}',
+                }
+            )
+        except User.DoesNotExist:
+            pass
+        message = 'Si el correo existe, recibirás un enlace.'
+
+    return render(request, 'users/forgot_password.html', {'message': message})
+
+
+# ─── CONFIGURACIÓN ─────────────────────────────────────
+
+@login_required
+@permission_required('users.gestionar_configuracion', raise_exception=True)
+def configuracion_general(request):
+    config, _ = ConfiguracionGeneral.objects.get_or_create(id=1)
+    if request.method == "POST":
+        config.nombre_sistema = request.POST.get("nombre")
+        config.tiempo_sesion  = int(request.POST.get("tiempo"))
+        config.idioma         = request.POST.get("idioma")
+        config.zona_horaria   = request.POST.get("zona")
+        config.save()
+        return JsonResponse({"success": True})
+    return render(request, "users/configuracion/general.html", {"config": config})
+
+
+@login_required
+@permission_required('users.gestionar_configuracion', raise_exception=True)
+def configuracion_seguridad(request):
+    politica, _ = PoliticaSeguridad.objects.get_or_create(id=1)
+    if request.method == "POST":
+        politica.longitud_minima  = int(request.POST.get("longitud"))
+        politica.dias_vigencia    = int(request.POST.get("dias"))
+        politica.intentos_fallidos = int(request.POST.get("intentos"))
+        politica.save()
+        return JsonResponse({"success": True})
+    return render(request, "users/configuracion/seguridad.html", {"politica": politica})
+
+
+@login_required
+@permission_required('users.gestionar_configuracion', raise_exception=True)
+def configuracion_notificaciones(request):
+    if request.method == "POST":
+        NotificacionConfig.objects.create(
+            tipo=request.POST.get("tipo"),
+            dias_antes=int(request.POST.get("dias")),
+            canal=request.POST.get("canal")
+        )
+        return JsonResponse({"success": True})
+    return render(request, "users/configuracion/notificaciones.html", {
+        "notificaciones": NotificacionConfig.objects.all()
+    })
+
+
+# ─── LOGS ─────────────────────────────────────────────
+
+def registrar_log(request, accion, modulo, descripcion):
+    LogAuditoria.objects.create(
+        usuario=request.user if request.user.is_authenticated else None,
+        accion=accion, modulo=modulo, descripcion=descripcion,
+        ip=request.META.get('REMOTE_ADDR'),
+        user_agent=request.META.get('HTTP_USER_AGENT', '')
+    )
+
+
+# ─── USUARIOS ─────────────────────────────────────────
+
+class UsuarioCreateForm(UserCreationForm):
+    rol = forms.ModelChoiceField(queryset=Group.objects.all(), required=True, label="Rol")
+
+    class Meta:
+        model = User
+        fields = ["username", "first_name", "last_name", "email", "rol"]
+
+    def __init__(self, *args, **kwargs):
+        request = kwargs.pop('request', None)
+        super().__init__(*args, **kwargs)
+        if request and not request.user.is_superuser:
+            self.fields["rol"].queryset = Group.objects.exclude(name="Administrador Global")
+
+    def save(self, commit=True):
+        user = super().save(commit)
+        rol = self.cleaned_data.get("rol")
+        if commit and rol:
+            user.groups.clear()
+            user.groups.add(rol)
+        return user
+
+
+class UsuarioUpdateForm(forms.ModelForm):
+    rol = forms.ModelChoiceField(queryset=Group.objects.all(), required=False, label="Rol")
+
+    class Meta:
+        model = User
+        fields = ["username", "first_name", "last_name", "email", "is_active", "rol"]
+
+    def __init__(self, *args, **kwargs):
+        request = kwargs.pop('request', None)
+        super().__init__(*args, **kwargs)
+        if self.instance.pk:
+            self.fields["rol"].initial = self.instance.groups.first()
+        if request and not request.user.is_superuser:
+            self.fields["rol"].queryset = Group.objects.exclude(name="Administrador Global")
+
+    def save(self, commit=True):
+        user = super().save(commit)
+        rol = self.cleaned_data.get("rol")
+        if commit:
+            user.groups.clear()
+            if rol:
+                user.groups.add(rol)
+        return user
+
+
+class UsuarioListView(PermissionRequiredMixin, ListView):
+    permission_required = "users.ver_usuarios"
+    model = User
+    template_name = "users/usuarios_lista.html"
+    context_object_name = "usuarios"
+
+    def get_queryset(self):
+        return User.objects.all().prefetch_related("groups")
+
+
+class UsuarioDetalleView(PermissionRequiredMixin, DetailView):
+    permission_required = "users.ver_usuarios"
+    model = User
+    template_name = "users/usuarios_detalle.html"
+    context_object_name = "usuario"
+
+
+class UsuarioCreateView(PermissionRequiredMixin, CreateView):
+    permission_required = "users.gestionar_usuarios"
+    model = User
+    form_class = UsuarioCreateForm
+    template_name = "users/usuarios_form.html"
+    success_url = reverse_lazy("usuarios_lista")
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['request'] = self.request
+        return kwargs
+
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        registrar_log(self.request, "CREATE", "USUARIOS", f"Usuario creado: {self.object.username}")
+        return response
+
+
+class UsuarioUpdateView(PermissionRequiredMixin, UpdateView):
+    permission_required = "users.gestionar_usuarios"
+    model = User
+    form_class = UsuarioUpdateForm
+    template_name = "users/usuarios_form.html"
+    success_url = reverse_lazy("usuarios_lista")
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['request'] = self.request
+        return kwargs
+
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        registrar_log(self.request, "UPDATE", "USUARIOS", f"Usuario actualizado: {self.object.username}")
+        return response
+
+
+@login_required
+def usuario_toggle(request, pk):
+    user = get_object_or_404(User, pk=pk)
+    user.is_active = not user.is_active
+    user.save()
+    registrar_log(request, "UPDATE", "USUARIOS",
+                  f"Usuario {'activado' if user.is_active else 'desactivado'}: {user.username}")
+    return redirect("usuarios_lista")
+
+
+# ─── ENTIDADES ─────────────────────────────────────────
+
+class EntidadForm(forms.ModelForm):
+    class Meta:
+        model = Entidad
+        fields = "__all__"
+
+
+class EntidadListView(PermissionRequiredMixin, ListView):
+    permission_required = "users.ver_entidades"
+    model = Entidad
+    template_name = "users/entidades_lista.html"
+    context_object_name = "entidades"
+
+
+class EntidadDetalleView(PermissionRequiredMixin, DetailView):
+    permission_required = "users.ver_entidades"
+    model = Entidad
+    template_name = "users/entidades_detalle.html"
+
+
+class EntidadCreateView(PermissionRequiredMixin, CreateView):
+    permission_required = "users.gestionar_entidades"
+    model = Entidad
+    form_class = EntidadForm
+    template_name = "users/entidades_form.html"
+    success_url = reverse_lazy("entidades_lista")
+
+
+class EntidadUpdateView(PermissionRequiredMixin, UpdateView):
+    permission_required = "users.gestionar_entidades"
+    model = Entidad
+    form_class = EntidadForm
+    template_name = "users/entidades_form.html"
+    success_url = reverse_lazy("entidades_lista")
+
+
+@login_required
+def entidad_toggle(request, pk):
+    entidad = get_object_or_404(Entidad, pk=pk)
+    entidad.is_active = not entidad.is_active
+    entidad.save()
+    return redirect("entidades_lista")
+
+
+# ─── SAQ DINÁMICO ─────────────────────────────────────────
+
+@login_required
+def saq_dinamico(request):
+    entidad = Entidad.objects.filter(usuario=request.user, is_active=True).first()
+    if not entidad:
+        return redirect("entidades_lista")
+
+    tipo_codigo = request.GET.get("tipo") or request.session.get("saq_recomendado", "A")
+    tipo_saq = TipoSAQ.objects.filter(codigo=tipo_codigo).first()
+
+    if not tipo_saq:
+        return render(request, "users/saq_dinamico.html", {
+            "requisitos": [], "saq_tipo": tipo_codigo,
+            "respuestas_dict": {}, "opciones": [],
+        })
+
+    controles_validos = ControlPCI.objects.filter(
+        saq_links__tipo_saq=tipo_saq
+    ).select_related("requisito").distinct()
+
+    if request.method == "POST":
+        for key, value in request.POST.items():
+            if key.startswith("c_"):
+                control_id = key.split("_")[1]
+                comentario = request.POST.get(f"comentario_{control_id}", "")
+                RespuestaSAQ.objects.update_or_create(
+                    usuario=request.user, entidad=entidad, control_id=control_id,
+                    defaults={"respuesta": value, "comentario": comentario}
+                )
+        return redirect("saq_resultado")
+
+    requisitos_dict = {}
+    for control in controles_validos:
+        req = control.requisito
+        if req.id not in requisitos_dict:
+            req.controles_filtrados = []
+            requisitos_dict[req.id] = req
+        requisitos_dict[req.id].controles_filtrados.append(control)
+
+    respuestas_dict = {
+        r.control_id: r
+        for r in RespuestaSAQ.objects.filter(
+            usuario=request.user, entidad=entidad, control__in=controles_validos
+        ).select_related("control")
+    }
+
+    opciones = [
+        ("IN_PLACE", "In Place"),
+        ("CCW",      "In Place with CCW"),
+        ("NA",       "Not Applicable"),
+        ("NO",       "Not in Place"),
+    ]
+
+    return render(request, "users/saq_dinamico.html", {
+        "requisitos":      requisitos_dict.values(),
+        "saq_tipo":        tipo_codigo,
+        "respuestas_dict": respuestas_dict,
+        "opciones":        opciones,
+    })
+
+
+# ─── SAQ RESULTADO ───────────────────────────────────
+
+@login_required
+def saq_resultado(request):
+    entidad = Entidad.objects.filter(usuario=request.user, is_active=True).first()
+    if not entidad:
+        return redirect("dashboard")
+
+    respuestas = RespuestaSAQ.objects.filter(
+        usuario=request.user, entidad=entidad
+    ).select_related("control")
+
+    total    = respuestas.count()
+    no_cumple = respuestas.filter(respuesta="NO").count()
+    ccw      = respuestas.filter(respuesta="CCW").count()
+    na       = respuestas.filter(respuesta="NA").count()
+    cumple   = respuestas.filter(respuesta="IN_PLACE").count()
+
+    if no_cumple > 0:
+        estado = "NON-COMPLIANT"
+    elif ccw > 0:
+        estado = "PARTIAL (CCW)"
+    else:
+        estado = "COMPLIANT"
+
+    porcentaje = int((cumple / total) * 100) if total > 0 else 0
+
+    resumen_requisitos = {}
+    for r in respuestas:
+        req = r.control.requisito
+        if req.codigo not in resumen_requisitos:
+            resumen_requisitos[req.codigo] = {"total": 0, "no": 0, "ccw": 0, "ok": 0}
+        resumen_requisitos[req.codigo]["total"] += 1
+        if r.respuesta == "NO":
+            resumen_requisitos[req.codigo]["no"] += 1
+        elif r.respuesta == "CCW":
+            resumen_requisitos[req.codigo]["ccw"] += 1
+        elif r.respuesta == "IN_PLACE":
+            resumen_requisitos[req.codigo]["ok"] += 1
+
+    return render(request, "users/saq_resultado.html", {
+        "estado": estado, "porcentaje": porcentaje,
+        "total": total, "cumple": cumple, "no_cumple": no_cumple,
+        "ccw": ccw, "na": na,
+        "resumen_requisitos": resumen_requisitos,
+        "respuestas": respuestas,
+    })
+
+
+# ─── PRETEST ─────────────────────────────────────────
+
+@login_required
+def pretest(request):
+    entidad = Entidad.objects.filter(usuario=request.user, is_active=True).first()
+    if not entidad:
+        return redirect("entidades_lista")
+
+    preguntas = PreguntaPreTest.objects.all().order_by("numero")
+
+    if request.method == "POST":
+        for p in preguntas:
+            valor = request.POST.get(f"p_{p.id}")
+            if p.tipo == "opcion":
+                RespuestaPreTest.objects.update_or_create(
+                    usuario=request.user, pregunta=p,
+                    defaults={"respuesta_opcion": valor}
+                )
+            else:
+                RespuestaPreTest.objects.update_or_create(
+                    usuario=request.user, pregunta=p,
+                    defaults={"respuesta_texto": valor}
+                )
+        return redirect("pretest_resultado")
+
+    return render(request, "users/pretest_cuestionario.html", {"preguntas": preguntas})
+
+
+@login_required
+def pretest_home(request):
+    entidad_activa = Entidad.objects.filter(usuario=request.user, is_active=True).exists()
+    if not entidad_activa:
+        return redirect("dashboard")
+    return render(request, "users/pretest_home.html", {"entidad_activa": entidad_activa})
+
+
+@login_required
+def pretest_resultado(request):
+    respuestas = RespuestaPreTest.objects.filter(usuario=request.user)
+
+    perfil = {k: False for k in [
+        "ecommerce","presencial","moto","almacena","procesa",
+        "transmite","red","aislada","tercero","iframe","app"
+    ]}
+
+    mapping = {
+        1:"ecommerce", 2:"presencial", 3:"moto", 4:"almacena",
+        5:"procesa",   6:"transmite",  7:"red",  8:"aislada",
+        9:"tercero",  10:"iframe",    11:"app",
+    }
+
+    for r in respuestas:
+        if r.respuesta_opcion == "SI":
+            key = mapping.get(r.pregunta.numero)
+            if key:
+                perfil[key] = True
+
+    if perfil["almacena"]:
+        recomendacion = "D"
+    elif perfil["ecommerce"]:
+        if perfil["tercero"] and perfil["iframe"]:
+            recomendacion = "A"
+        elif perfil["iframe"]:
+            recomendacion = "A-EP"
+        elif perfil["procesa"] or perfil["transmite"]:
+            recomendacion = "D"
+        else:
+            recomendacion = "A"
+    elif perfil["presencial"]:
+        if perfil["aislada"]:
+            recomendacion = "B"
+        elif perfil["red"]:
+            recomendacion = "B-IP"
+        else:
+            recomendacion = "C"
+    elif perfil["moto"]:
+        recomendacion = "C-VT"
+    else:
+        recomendacion = "C"
+
+    request.session["saq_recomendado"] = recomendacion
+
+    entidad = Entidad.objects.filter(usuario=request.user, is_active=True).first()
+    if entidad:
+        tipo_saq = TipoSAQ.objects.filter(codigo=recomendacion).first()
+        if tipo_saq:
+            prellenar_saq(request.user, entidad, tipo_saq, perfil)
+
+    return render(request, "users/pretest_resultado.html", {
+        "recomendacion": recomendacion,
+        "perfil": perfil,
+    })
+
+
+# ─── AOC – HELPERS ────────────────────────────────────────
+
+HOSTING_OPCIONES = [
+    "Applications / software", "Hardware", "Infrastructure / Network",
+    "Physical space (co-location)", "Storage", "Web-hosting services",
+    "Security services", "3-D Secure Hosting Provider",
+    "Multi-Tenant Service Provider",
+]
+
+MANAGED_OPCIONES = [
+    "Systems security services", "IT support",
+    "Physical security", "Terminal Management System",
+]
+
+PROCESSING_OPCIONES = [
+    "POI / card present", "Internet / e-commerce", "MOTO / Call Center",
+    "ATM", "Payment Gateway/Switch", "Prepaid Services",
+    "Records Management", "Tax/Government Payments",
+    "Fraud and Chargeback", "Issuer Processing", "Loyalty Programs",
+    "Merchant Services", "Account Management", "Back-Office Services",
+    "Billing Management", "Clearing and Settlement", "Network Provider",
+]
+
+ELEGIBILIDAD_POR_SAQ = {
+    "A": [
+        "Acepta solo transacciones sin tarjeta presente (e-commerce o MOTO).",
+        "Todo el procesamiento está tercerizado a un TPSP PCI DSS compliant.",
+        "No almacena, procesa ni transmite datos de tarjeta en sus sistemas.",
+        "Ha confirmado que el TPSP cumple con PCI DSS para los servicios usados.",
+        "Todos los elementos de la página de pago provienen directamente del TPSP.",
+        "No almacena datos de cuenta en formato electrónico.",
+    ],
+    "A-EP": [
+        "Acepta solo transacciones sin tarjeta presente (e-commerce).",
+        "Todo el procesamiento está tercerizado a un TPSP PCI DSS compliant.",
+        "No almacena datos de cuenta en formato electrónico.",
+        "Ha confirmado que el TPSP cumple con PCI DSS.",
+        "Todos los elementos de la página de pago provienen del TPSP.",
+        "El sitio no es susceptible a ataques de scripts que afecten sus sistemas.",
+    ],
+    "B": [
+        "Usa solo dispositivos PTS POI standalone aprobados por PCI.",
+        "Los dispositivos POI están validados en el programa PTS POI.",
+        "Los dispositivos no están conectados a otros sistemas del entorno.",
+        "La única transmisión de datos es desde los dispositivos POI al procesador.",
+        "El dispositivo POI no depende de otro dispositivo para conectarse.",
+        "No almacena datos de cuenta en formato electrónico.",
+        "Cualquier dato de cuenta está en papel, no recibido electrónicamente.",
+    ],
+    "B-IP": [
+        "Usa solo dispositivos PTS POI IP standalone aprobados por PCI.",
+        "Los dispositivos están validados en el programa PTS POI (según PCI SSC).",
+        "Los dispositivos no están conectados a otros sistemas (segmentación de red).",
+        "La única transmisión de datos es desde los dispositivos POI al procesador.",
+        "El dispositivo POI no depende de otro dispositivo.",
+        "No almacena datos de cuenta en formato electrónico.",
+        "Cualquier dato de cuenta está en papel, no recibido electrónicamente.",
+    ],
+    "C": [
+        "El sistema de aplicación de pagos e Internet están en el mismo dispositivo/LAN.",
+        "El sistema de pagos no está conectado a otros sistemas del entorno.",
+        "La ubicación física del POS no está conectada a otras instalaciones.",
+        "No almacena datos de cuenta en formato electrónico.",
+    ],
+    "C-VT": [
+        "El único procesamiento de pagos es vía terminal de pago virtual en navegador web.",
+        "La solución de terminal virtual es provista por un TPSP validado por PCI DSS.",
+        "El acceso es solo desde un dispositivo aislado, no conectado a otros sistemas.",
+        "El dispositivo no tiene software que almacene datos de cuenta.",
+        "El dispositivo no tiene hardware para capturar/almacenar datos de tarjeta.",
+        "No recibe, transmite ni almacena datos de cuenta electrónicamente por otros canales.",
+    ],
+    "D": [
+        "Cualquier dato de cuenta que conserve está en papel (no recibido electrónicamente).",
+    ],
+}
+
+
+def _calc_resumen_desde_saq(usuario, entidad, tipo_saq):
+    """
+    Calcula el resumen por requisito para Part 2g a partir de RespuestaSAQ.
+    Retorna dict: {"1": "IN_PLACE"|"CCW"|"NA"|"NO", ...}
+    """
+    controles = ControlPCI.objects.filter(
+        saq_links__tipo_saq=tipo_saq
+    ).select_related("requisito").distinct()
+
+    respuestas = {
+        r.control_id: r.respuesta
+        for r in RespuestaSAQ.objects.filter(usuario=usuario, entidad=entidad,
+                                             control__in=controles)
+    }
+
+    req_status = {}
+    for c in controles:
+        codigo_req = c.requisito.codigo
+        resp = respuestas.get(c.id, "NA")
+        if codigo_req not in req_status:
+            req_status[codigo_req] = {"IN_PLACE": 0, "CCW": 0, "NA": 0, "NO": 0}
+        req_status[codigo_req][resp] = req_status[codigo_req].get(resp, 0) + 1
+
+    resumen = {}
+    for req, counts in req_status.items():
+        if counts["NO"] > 0:
+            resumen[req] = "NO"
+        elif counts["CCW"] > 0:
+            resumen[req] = "CCW"
+        elif counts["IN_PLACE"] > 0:
+            resumen[req] = "IN_PLACE"
+        else:
+            resumen[req] = "NA"
+
+    return resumen
+
+
+def _guardar_paso(aoc, paso, data):
+    """Persiste los datos del paso actual en el AOCDocumento."""
+
+    if paso == 1:
+        aoc.company_name      = data.get("company_name", "")[:100]
+        aoc.dba               = data.get("dba", "")[:100]
+        aoc.direccion_postal  = data.get("direccion_postal", "")[:100]
+        aoc.sitio_web_aoc     = data.get("sitio_web_aoc", "")[:100]
+        aoc.contacto_nombre   = data.get("contacto_nombre", "")[:100]
+        aoc.contacto_cargo    = data.get("contacto_cargo", "")[:100]
+        aoc.contacto_telefono = data.get("contacto_telefono", "")[:100]
+        aoc.contacto_email    = data.get("contacto_email", "")[:100]
+        aoc.es_proveedor_servicio = data.get("es_proveedor_servicio") == "1"
+
+    elif paso == 2:
+        if aoc.es_proveedor_servicio:
+            aoc.servicios_evaluados_nombre = data.get("servicios_evaluados_nombre", "")[:100]
+            aoc.servicios_evaluados_tipo   = data.get("servicios_evaluados_tipo", "")[:100]
+            aoc.hosting_seleccionado    = data.getlist("hosting_seleccionado")
+            aoc.managed_seleccionado    = data.getlist("managed_seleccionado")
+            aoc.processing_seleccionado = data.getlist("processing_seleccionado")
+            aoc.hosting_otro    = data.get("hosting_otro", "")[:100]
+            aoc.managed_otro    = data.get("managed_otro", "")[:100]
+            aoc.processing_otro = data.get("processing_otro", "")[:100]
+        else:
+            aoc.canal_moto        = "canal_moto" in data
+            aoc.canal_ecommerce   = "canal_ecommerce" in data
+            aoc.canal_presencial  = "canal_presencial" in data
+            aoc.canales_excluidos = data.get("canales_excluidos") == "SI"
+            aoc.canales_excluidos_desc = data.get("canales_excluidos_desc", "")[:200]
+
+    elif paso == 3:
+        if aoc.es_proveedor_servicio:
+            aoc.descripcion_almacena    = data.get("descripcion_almacena", "")[:300]
+            aoc.descripcion_impacto     = data.get("descripcion_impacto", "")[:300]
+            aoc.descripcion_componentes = data.get("descripcion_componentes", "")[:300]
+        else:
+            raw = data.get("descripcion_canales_json", "[]")
+            try:
+                aoc.descripcion_canales = json.loads(raw)
+            except (json.JSONDecodeError, ValueError):
+                aoc.descripcion_canales = []
+        aoc.descripcion_cde    = data.get("descripcion_cde", "")[:300]
+        aoc.tiene_segmentacion = "tiene_segmentacion" in data
+
+    elif paso == 4:
+        # Instalaciones
+        raw = data.get("instalaciones_json", "[]")
+        try:
+            aoc.instalaciones = json.loads(raw)
+        except (json.JSONDecodeError, ValueError):
+            aoc.instalaciones = []
+
+        # Productos PCI SSC
+        aoc.usa_productos_validados = data.get("usa_productos_validados") == "SI"
+        raw = data.get("productos_json", "[]")
+        try:
+            aoc.productos_validados = json.loads(raw)
+        except (json.JSONDecodeError, ValueError):
+            aoc.productos_validados = []
+
+        # TPSPs
+        aoc.tpsp_almacena = data.get("tpsp_almacena") == "SI"
+        aoc.tpsp_gestiona = data.get("tpsp_gestiona") == "SI"
+        aoc.tpsp_impacto  = data.get("tpsp_impacto")  == "SI"
+        raw = data.get("proveedores_json", "[]")
+        try:
+            aoc.proveedores = json.loads(raw)[:10]
+        except (json.JSONDecodeError, ValueError):
+            aoc.proveedores = []
+
+    elif paso == 5:
+        resumen = {}
+        for key, value in data.items():
+            if key.startswith("req_"):
+                req_codigo = key.replace("req_", "")
+                resumen[req_codigo] = value
+        aoc.resumen_requisitos = resumen
+        aoc.justificacion_na   = data.get("justificacion_na", "")
+
+    elif paso == 6:
+        aoc.elegibilidad_confirmada = "elegibilidad_confirmada" in data
+
+    elif paso == 7:
+        aoc.fecha_completado    = data.get("fecha_completado") or None
+        aoc.restriccion_legal   = "restriccion_legal" in data
+        aoc.es_compliant        = "es_compliant" in data
+        aoc.assessment_completo = data.get("assessment_tipo") != "PARTIAL"
+        aoc.ack_saq_completado       = "ack_saq_completado" in data
+        aoc.ack_informacion_correcta = "ack_informacion_correcta" in data
+        aoc.ack_controles_mantenidos = "ack_controles_mantenidos" in data
+        aoc.ejecutivo_nombre = data.get("ejecutivo_nombre", "")[:100]
+        aoc.ejecutivo_cargo  = data.get("ejecutivo_cargo", "")[:100]
+        aoc.fecha_firma      = data.get("fecha_firma") or None
+        plan = {}
+        for key, value in data.items():
+            if key.startswith("plan_"):
+                req_codigo = key.replace("plan_", "")
+                plan[req_codigo] = (value == "SI")
+        aoc.plan_accion = plan
+
+    aoc.save()
+
+
+# ─── AOC – VISTAS ─────────────────────────────────────────
+
+@login_required
+def aoc_home(request):
+    entidad = Entidad.objects.filter(usuario=request.user, is_active=True).first()
+    if not entidad:
+        return redirect("entidades_lista")
+
+    aoc = AOCDocumento.objects.filter(usuario=request.user, entidad=entidad).first()
+    tipo_codigo = request.session.get("saq_recomendado", "A")
+
+    return render(request, "users/aoc_home.html", {
+        "aoc":         aoc,
+        "entidad":     entidad,
+        "tipo_codigo": tipo_codigo,
+    })
+
+
+TOTAL_PASOS = 7
+
+
+@login_required
+def aoc_wizard(request):
+    entidad = Entidad.objects.filter(usuario=request.user, is_active=True).first()
+    if not entidad:
+        return redirect("entidades_lista")
+
+    tipo_codigo = request.session.get("saq_recomendado", "A")
+    tipo_saq    = TipoSAQ.objects.filter(codigo=tipo_codigo).first()
+
+    # Crear o recuperar el AOCDocumento
+    aoc, creado = AOCDocumento.objects.get_or_create(
+        usuario=request.user,
+        entidad=entidad,
+        defaults={
+            "tipo_saq":        tipo_saq,
+            "company_name":    entidad.nombre_empresa,
+            "dba":             entidad.dba,
+            "contacto_nombre": entidad.contacto,
+            "contacto_email":  entidad.email,
+            "sitio_web_aoc":   entidad.sitio_web or "",
+            "fecha_completado": date.today(),
+            "fecha_firma":      date.today(),
+        }
+    )
+
+    paso = int(request.GET.get("paso", 1))
+    paso = max(1, min(paso, TOTAL_PASOS))
+
+    if request.method == "POST":
+        paso_actual = int(request.POST.get("paso", 1))
+        _guardar_paso(aoc, paso_actual, request.POST)
+
+        registrar_log(request, "AOC", "AOC",
+                      f"AOC paso {paso_actual} guardado - Entidad: {entidad}")
+
+        if paso_actual >= TOTAL_PASOS:
+            return redirect("aoc_home")
+
+        return redirect(f"{request.path}?paso={paso_actual + 1}")
+
+    # ── Contexto para el paso actual ──────────────────────
+
+    # Requisitos que aplican a este tipo de SAQ (para pasos 5 y 7)
+    requisitos_aplicables = list(
+        RequisitoPCI.objects.filter(
+            controles__saq_links__tipo_saq=tipo_saq
+        ).values("codigo", "nombre").distinct().order_by("codigo")
+    )
+
+    # Auto-calcular resumen si aún está vacío (primer acceso al paso 5)
+    if paso == 5 and not aoc.resumen_requisitos:
+        aoc.resumen_requisitos = _calc_resumen_desde_saq(
+            request.user, entidad, tipo_saq
+        )
+        aoc.save()
+
+    elegibilidad_items = ELEGIBILIDAD_POR_SAQ.get(tipo_codigo, [])
+
+    return render(request, "users/aoc_wizard.html", {
+        "aoc":                   aoc,
+        "entidad":               entidad,
+        "tipo_saq":              tipo_saq,
+        "paso":                  paso,
+        "total_pasos":           TOTAL_PASOS,
+        "requisitos_aplicables": requisitos_aplicables,
+        "elegibilidad_items":    elegibilidad_items,
+        "hosting_opciones":      HOSTING_OPCIONES,
+        "managed_opciones":      MANAGED_OPCIONES,
+        "processing_opciones":   PROCESSING_OPCIONES,
+        "instalaciones_json":    json.dumps(aoc.instalaciones),
+        "productos_json":        json.dumps(aoc.productos_validados),
+        "proveedores_json":      json.dumps(aoc.proveedores),
+        "canales_json":          json.dumps(aoc.descripcion_canales),
+    })
+
+
+users/admin.py
+
+from django.contrib import admin
+
+# Register your models here.
+
+users/apps.py
+
+from django.apps import AppConfig
+
+
+class UsersConfig(AppConfig):
+    default_auto_field = 'django.db.models.BigAutoField'
+    name = 'users'
+
+users/models.py
+
+from django.db import models
+from django.contrib.auth.models import User
+
+# ─── CONFIGURACIÓN GENERAL ───────────────────────────────
+
+class ConfiguracionGeneral(models.Model):
+    nombre_sistema = models.CharField(max_length=150)
+    tiempo_sesion = models.IntegerField()
+    idioma = models.CharField(max_length=20, default="es")
+    zona_horaria = models.CharField(max_length=50)
+    logo = models.ImageField(upload_to="logos/", null=True, blank=True)
+    actualizado_en = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return "Configuración General"
+
+
+# ─── SEGURIDAD ───────────────────────────────────────────
+
+class PoliticaSeguridad(models.Model):
+    longitud_minima = models.IntegerField(default=8)
+    requiere_numeros = models.BooleanField(default=True)
+    requiere_mayusculas = models.BooleanField(default=True)
+    requiere_simbolos = models.BooleanField(default=True)
+    dias_vigencia = models.IntegerField()
+    intentos_fallidos = models.IntegerField()
+    actualizado_en = models.DateTimeField(auto_now=True)
+
+
+# ─── NOTIFICACIONES ──────────────────────────────────────
+
+class NotificacionConfig(models.Model):
+    TIPOS = [("alerta", "Alerta"), ("recordatorio", "Recordatorio")]
+    CANALES = [("correo", "Correo"), ("sistema", "Sistema")]
+
+    tipo = models.CharField(max_length=20, choices=TIPOS, unique=True)
+    dias_antes = models.IntegerField()
+    canal = models.CharField(max_length=20, choices=CANALES)
+    activo = models.BooleanField(default=True)
+    creado_en = models.DateTimeField(auto_now_add=True)
+
+
+# ─── PERMISOS ────────────────────────────────────────────
+
+class PermisosSistema(models.Model):
+    class Meta:
+        permissions = [
+            ("ver_dashboard",            "Puede ver dashboard"),
+            ("ver_usuarios",             "Puede ver usuarios"),
+            ("gestionar_usuarios",       "Puede gestionar usuarios"),
+            ("ver_entidades",            "Puede ver entidades"),
+            ("gestionar_entidades",      "Puede gestionar entidades"),
+            ("ver_saq",                  "Puede ver SAQ"),
+            ("editar_saq",               "Puede editar SAQ"),
+            ("usar_pretest",             "Puede usar PreTest"),
+            ("ver_evidencias",           "Puede ver evidencias"),
+            ("gestionar_renovacion",     "Puede gestionar renovación"),
+            ("gestionar_configuracion",  "Puede gestionar configuración"),
+            ("ver_aoc",                  "Puede ver AOC"),
+            ("gestionar_aoc",            "Puede gestionar AOC"),
+        ]
+
+
+# ─── ENTIDADES ───────────────────────────────────────────
+
+class Entidad(models.Model):
+    usuario = models.ForeignKey(User, on_delete=models.CASCADE)
+    nombre_empresa = models.CharField(max_length=150)
+    dba = models.CharField(max_length=150)
+    email = models.EmailField()
+    sitio_web = models.URLField(blank=True, null=True)
+    contacto = models.CharField(max_length=150)
+    is_active = models.BooleanField(default=True)
+    fecha_modificacion = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return self.nombre_empresa
+
+
+# ─── SAQ ────────────────────────────────────────────────
+
+class RequisitoPCI(models.Model):
+    codigo = models.CharField(max_length=10)
+    nombre = models.CharField(max_length=200)
+
+    def __str__(self):
+        return f"Req {self.codigo}"
+
+
+class ControlPCI(models.Model):
+    requisito = models.ForeignKey(
+        RequisitoPCI, on_delete=models.CASCADE, related_name="controles"
+    )
+    codigo = models.CharField(max_length=20)
+    descripcion = models.TextField()
+
+    def __str__(self):
+        return self.codigo
+
+
+class TipoSAQ(models.Model):
+    codigo = models.CharField(max_length=10, unique=True)
+    nombre = models.CharField(max_length=50)
+
+    def __str__(self):
+        return self.codigo
+
+
+class ControlSAQ(models.Model):
+    control = models.ForeignKey(
+        ControlPCI, on_delete=models.CASCADE, related_name="saq_links"
+    )
+    tipo_saq = models.ForeignKey(TipoSAQ, on_delete=models.CASCADE)
+
+    class Meta:
+        unique_together = ('control', 'tipo_saq')
+
+
+# ─── RESPUESTAS SAQ ─────────────────────────────────────
+
+class RespuestaSAQ(models.Model):
+    OPCIONES = [
+        ("IN_PLACE", "In Place"),
+        ("CCW",      "In Place with CCW"),
+        ("NA",       "Not Applicable"),
+        ("NO",       "Not in Place"),
+    ]
+
+    usuario  = models.ForeignKey(User, on_delete=models.CASCADE)
+    entidad  = models.ForeignKey(Entidad, on_delete=models.CASCADE)
+    control  = models.ForeignKey(ControlPCI, on_delete=models.CASCADE, null=True, blank=True)
+    respuesta  = models.CharField(max_length=20, choices=OPCIONES)
+    comentario = models.TextField(blank=True)
+
+    class Meta:
+        unique_together = ("usuario", "entidad", "control")
+
+
+# ─── PRETEST ────────────────────────────────────────────
+
+class PreguntaPreTest(models.Model):
+    TIPOS = [("opcion", "Opción"), ("texto", "Texto")]
+
+    numero       = models.IntegerField()
+    saq_destino  = models.CharField(max_length=20)
+    texto_es     = models.TextField()
+    texto_en     = models.TextField(blank=True)
+    tipo         = models.CharField(max_length=10, choices=TIPOS, default="opcion")
+    requiere_texto = models.BooleanField(default=False)
+
+    def __str__(self):
+        return f"{self.numero}"
+
+
+class RespuestaPreTest(models.Model):
+    OPCIONES = [("SI", "Sí"), ("NO", "No"), ("NA", "No aplica")]
+
+    usuario          = models.ForeignKey(User, on_delete=models.CASCADE)
+    pregunta         = models.ForeignKey(PreguntaPreTest, on_delete=models.CASCADE)
+    respuesta_opcion = models.CharField(max_length=2, choices=OPCIONES, null=True, blank=True)
+    respuesta_texto  = models.TextField(blank=True)
+
+    class Meta:
+        unique_together = ("usuario", "pregunta")
+
+
+# ─── MOTOR DE REGLAS ─────────────────────────────────────
+
+class ReglaPrellenado(models.Model):
+    control    = models.ForeignKey(ControlPCI, on_delete=models.CASCADE)
+    condiciones = models.JSONField()
+    respuesta  = models.CharField(max_length=20, choices=RespuestaSAQ.OPCIONES)
+    comentario = models.TextField(blank=True)
+    prioridad  = models.IntegerField(default=1)
+
+    def __str__(self):
+        return f"{self.control.codigo} -> {self.respuesta}"
+
+
+# ─── AUDITORÍA ──────────────────────────────────────────
+
+class LogAuditoria(models.Model):
+    ACCIONES = [
+        ("LOGIN",   "Inicio de sesión"),
+        ("LOGOUT",  "Cierre de sesión"),
+        ("CREATE",  "Creación"),
+        ("UPDATE",  "Actualización"),
+        ("DELETE",  "Eliminación"),
+        ("SAQ",     "Respuesta SAQ"),
+        ("PRETEST", "PreTest"),
+        ("AOC",     "AOC"),
+    ]
+
+    usuario     = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
+    accion      = models.CharField(max_length=20, choices=ACCIONES)
+    modulo      = models.CharField(max_length=50)
+    descripcion = models.TextField()
+    ip          = models.GenericIPAddressField(null=True, blank=True)
+    user_agent  = models.TextField(blank=True)
+    fecha       = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.usuario} - {self.accion} - {self.modulo}"
+
+
+# ─── AOC ────────────────────────────────────────────────
+
+class AOCDocumento(models.Model):
+
+    usuario  = models.ForeignKey(User, on_delete=models.CASCADE)
+    entidad  = models.ForeignKey(Entidad, on_delete=models.CASCADE)
+    tipo_saq = models.ForeignKey(TipoSAQ, on_delete=models.CASCADE)
+
+    # SAQ D puede ser Comercio o Proveedor de Servicio
+    es_proveedor_servicio = models.BooleanField(default=False)
+
+    # ── Part 1a – Datos del comerciante ─────────────────
+    company_name      = models.CharField(max_length=100, blank=True)
+    dba               = models.CharField(max_length=100, blank=True)
+    direccion_postal  = models.CharField(max_length=100, blank=True)
+    sitio_web_aoc     = models.CharField(max_length=100, blank=True)
+    contacto_nombre   = models.CharField(max_length=100, blank=True)
+    contacto_cargo    = models.CharField(max_length=100, blank=True)
+    contacto_telefono = models.CharField(max_length=100, blank=True)
+    contacto_email    = models.CharField(max_length=100, blank=True)
+
+    # ── Part 2a – Canales de pago (comerciantes) ────────
+    canal_moto          = models.BooleanField(default=False)
+    canal_ecommerce     = models.BooleanField(default=False)
+    canal_presencial    = models.BooleanField(default=False)
+    canales_excluidos   = models.BooleanField(default=False)
+    canales_excluidos_desc = models.CharField(max_length=200, blank=True)
+
+    # ── Part 2a – Scope Verification (D Proveedor) ──────
+    servicios_evaluados_nombre = models.CharField(max_length=100, blank=True)
+    servicios_evaluados_tipo   = models.CharField(max_length=100, blank=True)
+    # Checkboxes almacenados como JSON list de strings
+    hosting_seleccionado    = models.JSONField(default=list)
+    managed_seleccionado    = models.JSONField(default=list)
+    processing_seleccionado = models.JSONField(default=list)
+    hosting_otro            = models.CharField(max_length=100, blank=True)
+    managed_otro            = models.CharField(max_length=100, blank=True)
+    processing_otro         = models.CharField(max_length=100, blank=True)
+
+    # ── Part 2b – Descripción del rol ───────────────────
+    # Comerciante: canales con descripción de cómo
+    # JSON: [{"canal": "Stores|Processes|Transmits", "como": "..."}]
+    descripcion_canales = models.JSONField(default=list)
+    # Proveedor de servicio (3 campos de 300 chars):
+    descripcion_almacena    = models.TextField(max_length=300, blank=True)
+    descripcion_impacto     = models.TextField(max_length=300, blank=True)
+    descripcion_componentes = models.TextField(max_length=300, blank=True)
+
+    # ── Part 2c – Entorno CDE ───────────────────────────
+    descripcion_cde    = models.TextField(max_length=300, blank=True)
+    tiene_segmentacion = models.BooleanField(default=False)
+
+    # ── Part 2d – Instalaciones ─────────────────────────
+    # JSON: [{"tipo": str, "total": int, "ubicacion": str}]
+    instalaciones = models.JSONField(default=list)
+
+    # ── Part 2e – Productos validados PCI SSC ───────────
+    usa_productos_validados = models.BooleanField(default=False)
+    # JSON: [{"nombre": str, "version": str, "estandar": str,
+    #          "referencia": str, "expiry": "YYYY-MM-DD"}]
+    productos_validados = models.JSONField(default=list)
+
+    # ── Part 2f – Terceros (TPSPs) ──────────────────────
+    tpsp_almacena = models.BooleanField(default=False)
+    tpsp_gestiona = models.BooleanField(default=False)
+    tpsp_impacto  = models.BooleanField(default=False)
+    # JSON: [{"nombre": str, "descripcion": str}] máx 10
+    proveedores = models.JSONField(default=list)
+
+    # ── Part 2g – Resumen por requisito ─────────────────
+    # JSON: {"1": "IN_PLACE", "2": "CCW", "3": "NA", ...}
+    resumen_requisitos = models.JSONField(default=dict)
+    justificacion_na   = models.TextField(blank=True)
+
+    # ── Part 2h – Elegibilidad ──────────────────────────
+    elegibilidad_confirmada = models.BooleanField(default=False)
+
+    # ── Part 3 – Attestation ────────────────────────────
+    fecha_completado    = models.DateField(null=True, blank=True)
+    restriccion_legal   = models.BooleanField(default=False)
+    es_compliant        = models.BooleanField(default=False)
+    assessment_completo = models.BooleanField(default=True)  # Full=True, Partial=False
+
+    ack_saq_completado       = models.BooleanField(default=False)
+    ack_informacion_correcta = models.BooleanField(default=False)
+    ack_controles_mantenidos = models.BooleanField(default=False)
+
+    ejecutivo_nombre = models.CharField(max_length=100, blank=True)
+    ejecutivo_cargo  = models.CharField(max_length=100, blank=True)
+    fecha_firma      = models.DateField(null=True, blank=True)
+
+    # ── Part 4 – Plan de acción ─────────────────────────
+    # JSON: {"1": true, "2": true, ...}  true = compliant YES
+    plan_accion = models.JSONField(default=dict)
+
+    # ── Meta ─────────────────────────────────────────────
+    creado_en     = models.DateTimeField(auto_now_add=True)
+    actualizado_en = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = ("usuario", "entidad")
+        permissions = [
+            ("ver_aoc",      "Puede ver AOC"),
+            ("gestionar_aoc","Puede gestionar AOC"),
+        ]
+
+    def __str__(self):
+        return f"AOC {self.tipo_saq} – {self.entidad}"
+
+
+users/urls.py
+
+from django.urls import path
+from django.contrib.auth import views as auth_views
+from . import views
+
+urlpatterns = [
+
+    # AUTH
+    path('', views.login_view, name='login'),
+    path('dashboard/', views.dashboard, name='dashboard'),
+    path('logout/', views.logout_view, name='logout'),
+
+    # PASSWORD
+    path('forgot-password/', views.forgot_password, name='forgot_password'),
+    path(
+        'reset-password/<uidb64>/<token>/',
+        auth_views.PasswordResetConfirmView.as_view(
+            template_name='users/reset_password_confirm.html',
+            success_url='/'
+        ),
+        name='password_reset_confirm'
+    ),
+
+    # CONFIGURACIÓN
+    path('configuracion/general/', views.configuracion_general, name='config_general'),
+    path('configuracion/seguridad/', views.configuracion_seguridad, name='config_seguridad'),
+    path('configuracion/notificaciones/', views.configuracion_notificaciones, name='config_notificaciones'),
+
+    # USUARIOS
+    path('usuarios/', views.UsuarioListView.as_view(), name='usuarios_lista'),
+    path('usuarios/nuevo/', views.UsuarioCreateView.as_view(), name='usuario_crear'),
+    path('usuarios/<int:pk>/', views.UsuarioDetalleView.as_view(), name='usuario_detalle'),
+    path('usuarios/<int:pk>/editar/', views.UsuarioUpdateView.as_view(), name='usuario_editar'),
+    path('usuarios/<int:pk>/toggle/', views.usuario_toggle, name='usuario_toggle'),
+
+    # ENTIDADES
+    path('entidades/', views.EntidadListView.as_view(), name='entidades_lista'),
+    path('entidades/nueva/', views.EntidadCreateView.as_view(), name='entidad_crear'),
+    path('entidades/<int:pk>/', views.EntidadDetalleView.as_view(), name='entidades_detalle'),
+    path('entidades/<int:pk>/editar/', views.EntidadUpdateView.as_view(), name='entidad_editar'),
+    path('entidades/<int:pk>/toggle/', views.entidad_toggle, name='entidad_toggle'),
+
+    # SAQ
+    path('saq/', views.saq_dinamico, name='saq_dinamico'),
+    path('saq/resultado/', views.saq_resultado, name='saq_resultado'),
+
+    # PRETEST
+    path('pretest/', views.pretest_home, name='pretest_home'),
+    path('pretest/iniciar/', views.pretest, name='pretest'),
+    path('pretest/resultado/', views.pretest_resultado, name='pretest_resultado'),
+    
+    # AOC
+    path('aoc/',        views.aoc_home,   name='aoc_home'),
+    path('aoc/wizard/', views.aoc_wizard, name='aoc_wizard'),
+]
+

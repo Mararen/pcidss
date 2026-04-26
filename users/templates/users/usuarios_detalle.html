@@ -57,7 +57,7 @@
                 {% if usuario.is_superuser %}
                     Administrador Global
                 {% else %}
-                    {{ usuario.groups.first.name|default:"Usuario" }}
+                    {{ usuario.groups.first.name|default:"Sin rol" }}
                 {% endif %}
             </span>
         </div>
@@ -65,27 +65,60 @@
     </div>
 </div>
 
-{% if usuario.entidad %}
+{% with entidad=usuario.entidad_set.first %}
+{% if entidad %}
 <div class="card" style="margin-top:20px;">
 
     <div class="card-header">
         <h3>Entidad asociada</h3>
     </div>
+	
+	<div class="card" style="margin-top:20px;">
+
+    <div class="card-header">
+        <h3>Información de auditoría</h3>
+    </div>
+
+    <div class="card-body">
+
+        <div class="detail-row">
+            <span class="label">Fecha de creación</span>
+            <span class="value">
+                {{ usuario.date_joined|date:"Y-m-d H:i" }}
+            </span>
+        </div>
+
+        <div class="detail-row">
+            <span class="label">Última modificación</span>
+            <span class="value">
+                {{ usuario.ultima_modificacion|date:"Y-m-d H:i"|default:"Sin cambios" }}
+            </span>
+        </div>
+
+        <div class="detail-row">
+            <span class="label">Último acceso</span>
+            <span class="value">
+                {{ usuario.last_login|date:"Y-m-d H:i"|default:"Nunca" }}
+            </span>
+        </div>
+
+    </div>
+</div>
 
     <div class="card-body">
 
         <div class="detail-row">
             <span class="label">Empresa</span>
-            <span class="value">{{ usuario.entidad.nombre_empresa }}</span>
+            <span class="value">{{ entidad.nombre_empresa }}</span>
         </div>
 
         <div class="detail-row">
             <span class="label">Email</span>
-            <span class="value">{{ usuario.entidad.email }}</span>
+            <span class="value">{{ entidad.email }}</span>
         </div>
 
         <div style="margin-top:15px;">
-            <a href="{% url 'entidades_detalle' usuario.entidad.pk %}" class="btn-secondary">
+            <a href="{% url 'entidades_detalle' entidad.pk %}" class="btn-secondary">
                 Ver entidad →
             </a>
         </div>
@@ -93,5 +126,6 @@
     </div>
 </div>
 {% endif %}
+{% endwith %}
 
 {% endblock %}

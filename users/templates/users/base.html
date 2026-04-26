@@ -16,10 +16,9 @@
 
         <header class="topbar">
             <nav class="topbar-nav">
-                <a href="{% url 'dashboard' %}">Dashboard</a>
                 <a href="#">Catálogos</a>
-                <a href="#">Configuración</a>
-                <a href="#">Ayuda</a>
+                <a href="{% url 'config_general' %}">Configuración</a>
+                <a href="{% url 'helpdesk:ticket_lista' %}">Ayuda</a>
             </nav>
 
             <div class="topbar-right">

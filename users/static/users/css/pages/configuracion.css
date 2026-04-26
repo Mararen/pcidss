@@ -1,0 +1,195 @@
+/* ─── CONFIGURACIÓN TABS ───────────────────────────── */
+
+.config-tabs {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 24px;
+}
+
+.config-tabs a {
+    padding: 8px 16px;
+    border-radius: var(--radius-sm);
+    background: white;
+    border: 1px solid var(--border-light);
+    font-size: 13.5px;
+    text-decoration: none;
+    color: var(--text-muted);
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.config-tabs a:hover {
+    background: var(--primary-light);
+    color: var(--primary-dark);
+}
+
+.config-tabs a.active {
+    background: var(--primary);
+    color: white;
+    border-color: var(--primary);
+}
+
+
+/* ─── CONTENIDO CONFIG ───────────────────────────── */
+
+.config-content {
+    background: white;
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-sm);
+    padding: 24px 28px;
+    max-width: 750px;
+}
+
+
+/* ─── FORM CONFIG ───────────────────────────── */
+
+.config-content form {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.config-content label {
+    font-size: 13px;
+    color: var(--text-muted);
+    font-weight: 500;
+}
+
+.config-content input,
+.config-content select {
+    margin-bottom: 6px;
+}
+
+
+/* ─── ACTIONS ───────────────────────────── */
+
+.form-actions {
+    margin-top: 16px;
+}
+
+/* ─── BOTONES CONFIGURACIÓN ───────────────────────────── */
+
+/* Contenedor */
+.config-content .form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+/* Botón principal */
+.config-content .btn-save {
+    background: var(--primary);
+    color: white;
+    padding: 9px 18px;
+    border-radius: var(--radius-sm);
+    font-size: 13.5px;
+    font-weight: 600;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.config-content .btn-save:hover {
+    background: var(--primary-dark);
+}
+
+/* Botón secundario */
+.config-content .btn-reset {
+    background: white;
+    border: 1.5px solid var(--border-light);
+    padding: 9px 18px;
+    border-radius: var(--radius-sm);
+    font-size: 13.5px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.config-content .btn-reset:hover {
+    background: var(--primary-light);
+    color: var(--primary-dark);
+}
+
+/* Botón pequeño */
+.config-content .btn-inline {
+    padding: 7px 14px;
+    font-size: 12.5px;
+    border-radius: var(--radius-sm);
+    background: var(--primary);
+    color: white;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.config-content .btn-inline:hover {
+    background: var(--primary-dark);
+}
+
+/* ─── TABLA NOTIFICACIONES ───────────────────────────── */
+
+.config-content table {
+    width: 100%;
+    margin-top: 20px;
+    border-collapse: collapse;
+    background: white;
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+    font-size: 13.5px;
+}
+
+.config-content table th {
+    text-align: left;
+    padding: 12px 14px;
+    background: var(--primary-light);
+    color: var(--primary-dark);
+    font-weight: 600;
+}
+
+.config-content table td {
+    padding: 12px 14px;
+    border-bottom: 1px solid var(--border-light);
+}
+
+.config-content table tr:hover {
+    background: #f8fdfd;
+}
+
+
+/* ─── MODAL SIMPLE ───────────────────────────── */
+
+#modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 999;
+}
+
+#modal > div {
+    background: white;
+    padding: 20px 24px;
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-md);
+    text-align: center;
+}
+
+#modal button {
+    margin-top: 10px;
+}
+
+
+/* ─── RESPONSIVE ───────────────────────────── */
+
+@media (max-width: 768px) {
+    .config-content {
+        padding: 18px;
+    }
+
+    .config-tabs {
+        flex-wrap: wrap;
+    }
+}
+

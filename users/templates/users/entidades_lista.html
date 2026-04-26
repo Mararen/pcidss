@@ -24,70 +24,81 @@
 <div class="table-controls">
     <div class="table-controls-left">
         <form method="get">
-            <input 
-                type="text" 
-                name="buscar" 
-                placeholder="Buscar entidad..." 
-                value="{{ request.GET.buscar }}"
-            >
+            <input type="text" name="buscar" value="{{ request.GET.buscar }}" placeholder="Buscar entidad...">
         </form>
     </div>
 </div>
 
-<table class="modern-table">
-    <thead>
-        <tr>
-            <td>Empresa</td>
-            <td>DBA</td>
-            <td>Email</td>
-            <td>Contacto</td>
-            <td>Estado</td>
-            <td>Acciones</td>
-        </tr>
-    </thead>
+            <table class="modern-table">
 
-    <tbody>
-        {% for entidad in entidades %}
-        <tr>
-            <td>{{ entidad.nombre_empresa }}</td>
-            <td>{{ entidad.dba }}</td>
-            <td>{{ entidad.email }}</td>
-            <td>{{ entidad.contacto }}</td>
+                <thead>
+                    <tr>
+                        <td>Empresa</td>
+                        <td>DBA</td>
+                        <td>Email</td>
+                        <td>Contacto</td>
+                        <td>Estado</td>
+                        <td>Creado por</td>
+                        <td>Creación</td>
+                        <td>Última modificación</td>
+                        <td>Acciones</td>
+                    </tr>
+                </thead>
 
-            <td>
+<tbody>
+{% for entidad in entidades %}
+<tr>
+    <td>{{ entidad.nombre_empresa }}</td>
+    <td>{{ entidad.dba }}</td>
+    <td>{{ entidad.email }}</td>
+    <td>{{ entidad.contacto }}</td>
+
+    <td>
+        {% if entidad.is_active %}
+            <span class="badge badge-success">Activa</span>
+        {% else %}
+            <span class="badge badge-danger">Inactiva</span>
+        {% endif %}
+    </td>
+
+    <td>{{ entidad.creado_por.username|default:"Sistema" }}</td>
+
+    <td>{{ entidad.fecha_creacion|date:"Y-m-d H:i" }}</td>
+
+    <td>{{ entidad.fecha_modificacion|date:"Y-m-d H:i" }}</td>
+
+    <td>
+        <div class="actions">
+
+            <a href="{% url 'entidades_detalle' entidad.pk %}" class="btn-icon">
+                <i data-feather="eye"></i>
+            </a>
+
+            {% if perms.users.gestionar_entidades %}
+
+            <a href="{% url 'entidad_editar' entidad.pk %}" class="btn-icon">
+                <i data-feather="edit"></i>
+            </a>
+
+            <a href="{% url 'entidad_toggle' entidad.pk %}" class="btn-icon">
                 {% if entidad.is_active %}
-                    <span class="badge badge-success">Activa</span>
+                    <i data-feather="toggle-right"></i>
                 {% else %}
-                    <span class="badge badge-danger">Inactiva</span>
+                    <i data-feather="toggle-left"></i>
                 {% endif %}
-            </td>
+            </a>
 
-            <td>
-                <div class="actions">
-				    <a href="{% url 'entidades_detalle' entidad.pk %}" class="btn-icon">
-						<i data-feather="eye"></i>
-					</a>
-					
-					<a href="{% url 'entidad_editar' entidad.pk %}" class="btn-icon">
-						<i data-feather="edit"></i>
-					</a>
+            {% endif %}
 
-					<a href="{% url 'entidad_toggle' entidad.pk %}" class="btn-icon">
-						{% if entidad.is_active %}
-						<i data-feather="toggle-right"></i>
-						{% else %}
-						<i data-feather="toggle-left"></i>
-						{% endif %}
-					</a>
-                </div>
-            </td>
-        </tr>
-        {% empty %}
-        <tr>
-            <td colspan="6">No hay entidades registradas.</td>
-        </tr>
-        {% endfor %}
-    </tbody>
+        </div>
+    </td>
+</tr>
+{% empty %}
+<tr>
+    <td colspan="9">No hay entidades registradas.</td>
+</tr>
+{% endfor %}
+</tbody>
 </table>
 
 <div class="pagination">
@@ -109,3 +120,17 @@
 </div>
 
 {% endblock %}
+
+        </section>
+
+    </main>
+
+</div>
+
+<script src="https://unpkg.com/feather-icons/dist/feather.min.js"></script>
+<script>
+    feather.replace({'stroke-width': 2});
+</script>
+
+</body>
+</html>

@@ -1,0 +1,321 @@
+{% extends 'users/base.html' %}
+{% load static %}
+{% load saq_tags %}
+
+{% block title %}PreTest #{{ pretest.pk }} — {{ pretest.entidad.nombre_empresa }} | PCI Cert Pro{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+  <div class="page-header-text">
+    <h1>PreTest — {{ pretest.entidad.nombre_empresa }}</h1>
+    <p>PCI DSS v4.0.1 &nbsp;·&nbsp; Cuestionario de elegibilidad SAQ (72 preguntas)</p>
+  </div>
+  <a href="{% url 'saq:pretest_resultados' pretest.pk %}" class="btn-secondary">
+    <i data-feather="bar-chart-2"></i> Ver resultados
+  </a>
+</div>
+
+{# ── BARRA DE PROGRESO ─────────────────────────────────────── #}
+<div class="pretest-progress-card">
+  <div class="pretest-progress-info">
+    <span class="text-muted">Progreso del cuestionario</span>
+    <span id="prog-label"><strong>{{ respondidas }}</strong> / {{ total }} respondidas</span>
+  </div>
+  <div class="progress-bar-wrap">
+    <div class="progress-bar-fill" id="prog-fill" style="width:{{ porcentaje }}%"></div>
+  </div>
+  {# Contadores sólo de preguntas de elegibilidad #}
+  <div class="pretest-counters" style="margin-top:8px">
+    <span class="counter-si">✓ Sí: <strong id="n-si">0</strong></span>
+    <span class="counter-no">✗ No: <strong id="n-no">0</strong></span>
+    <span class="counter-na">N/A: <strong id="n-na">0</strong></span>
+    <span class="counter-nt">No probado: <strong id="n-nt">0</strong></span>
+  </div>
+</div>
+
+{# ── PREGUNTAS ─────────────────────────────────────────────── #}
+<div id="preguntas-container">
+{% for p in page_obj %}
+<div class="pretest-question-card"
+     id="qcard-{{ p.pk }}"
+     data-pk="{{ p.pk }}"
+     data-tipo="{{ p.tipo_input }}">
+
+  {# Cabecera #}
+  <div class="pretest-q-meta">
+    <span class="pretest-q-num">{{ p.numero }}.</span>
+    {# Chip SAQ primario #}
+    <span class="saq-chip saq-chip--{{ p.tipo_saq|lower }}">{{ p.tipo_saq }}</span>
+    {# Chips SAQ extra (multi-SAQ) #}
+    {% if p.tipos_saq_extra %}
+      {% for extra in p.tipos_saq_extra|split:"," %}
+        <span class="saq-chip saq-chip--{{ extra|lower }}">{{ extra }}</span>
+      {% endfor %}
+    {% endif %}
+    <span class="pretest-q-seccion">{{ p.seccion_aoc }}</span>
+  </div>
+
+  {# Texto de la pregunta #}
+  <p class="pretest-q-text">{{ p.pregunta_es }}</p>
+  {% if p.pregunta_en %}
+    <p class="pretest-q-text-en">{{ p.pregunta_en }}</p>
+  {% endif %}
+
+  {# ── CONTROL DE RESPUESTA SEGÚN TIPO ──────────────────── #}
+
+  {% if p.tipo_input == 'elegibilidad' %}
+  {# 4 botones estándar PCI DSS — Part 2h #}
+  <div class="pretest-answers" data-tipo="elegibilidad">
+    <button class="ans-btn ans-si"  data-pk="{{ p.pk }}" data-val="si"
+            onclick="responder({{ p.pk }},'si',this)">Sí</button>
+    <button class="ans-btn ans-no"  data-pk="{{ p.pk }}" data-val="no"
+            onclick="responder({{ p.pk }},'no',this)">No</button>
+    <button class="ans-btn ans-na"  data-pk="{{ p.pk }}" data-val="na"
+            onclick="responder({{ p.pk }},'na',this)">N/A</button>
+    <button class="ans-btn ans-nt"  data-pk="{{ p.pk }}" data-val="no_probado"
+            onclick="responder({{ p.pk }},'no_probado',this)">No probado</button>
+  </div>
+
+  {% elif p.tipo_input == 'checkbox_si_no' %}
+  {# ☐ Sí   ☐ No #}
+  <div class="pretest-answers" data-tipo="checkbox_si_no">
+    <button class="ans-btn ans-si" data-pk="{{ p.pk }}" data-val="si"
+            onclick="responder({{ p.pk }},'si',this)">☑ Sí</button>
+    <button class="ans-btn ans-no" data-pk="{{ p.pk }}" data-val="no"
+            onclick="responder({{ p.pk }},'no',this)">☐ No</button>
+  </div>
+
+  {% elif p.tipo_input == 'checkbox_multi' %}
+  {# Múltiples casillas — guarda JSON array #}
+  <div class="pretest-multi-wrap" data-pk="{{ p.pk }}">
+    {% for opcion in p.get_opciones %}
+    <label class="pretest-checkbox-label">
+      <input type="checkbox"
+             class="pretest-multi-check"
+             data-pk="{{ p.pk }}"
+             value="{{ opcion }}"
+             onchange="responderMulti({{ p.pk }})">
+      {{ opcion }}
+    </label>
+    {% endfor %}
+  </div>
+
+  {% elif p.tipo_input == 'select' %}
+  {# Lista desplegable #}
+  <div class="pretest-input-wrap">
+    <select class="pretest-select form-input"
+            data-pk="{{ p.pk }}"
+            onchange="responderTexto({{ p.pk }}, this.value)">
+      <option value="">— Selecciona una opción —</option>
+      {% for opcion in p.get_opciones %}
+      <option value="{{ opcion }}">{{ opcion }}</option>
+      {% endfor %}
+    </select>
+  </div>
+
+  {% elif p.tipo_input == 'texto_corto' %}
+  <div class="pretest-input-wrap">
+    <input type="text"
+           class="pretest-texto form-input"
+           data-pk="{{ p.pk }}"
+           maxlength="{{ p.max_chars|default:200 }}"
+           placeholder="Máx. {{ p.max_chars|default:200 }} caracteres"
+           oninput="responderTextoDebounce({{ p.pk }}, this.value)">
+  </div>
+
+  {% elif p.tipo_input == 'texto_largo' %}
+  <div class="pretest-input-wrap">
+    <textarea class="pretest-texto form-input" rows="4"
+              data-pk="{{ p.pk }}"
+              maxlength="{{ p.max_chars|default:500 }}"
+              placeholder="Máx. {{ p.max_chars|default:500 }} caracteres"
+              oninput="responderTextoDebounce({{ p.pk }}, this.value)"></textarea>
+    <div class="pretest-charcount" id="cc-{{ p.pk }}">0 / {{ p.max_chars|default:500 }}</div>
+  </div>
+
+  {% elif p.tipo_input == 'numero' %}
+  <div class="pretest-input-wrap">
+    <input type="number" class="pretest-numero form-input"
+           data-pk="{{ p.pk }}" min="0" placeholder="Ingresa un número"
+           onchange="responderTexto({{ p.pk }}, this.value)">
+  </div>
+
+  {% elif p.tipo_input == 'fecha' %}
+  <div class="pretest-input-wrap">
+    <input type="date" class="pretest-fecha form-input"
+           data-pk="{{ p.pk }}"
+           onchange="responderTexto({{ p.pk }}, this.value)">
+  </div>
+  {% endif %}
+
+  {# Indicador de guardado #}
+  <div class="pretest-save-indicator" id="saved-{{ p.pk }}" style="display:none">
+    <span class="text-success" style="font-size:12px">✓ Guardado</span>
+  </div>
+
+</div>{% endfor %}
+</div>
+
+{# ── NAVEGACIÓN ────────────────────────────────────────────── #}
+<div class="pretest-nav">
+  {% if page_obj.has_previous %}
+  <a href="?pagina={{ page_obj.previous_page_number }}" class="btn-secondary">← Anterior</a>
+  {% else %}<span></span>{% endif %}
+
+  <span class="page-info">Página {{ num_pagina }} de {{ paginator.num_pages }}</span>
+
+  {% if page_obj.has_next %}
+  <a href="?pagina={{ page_obj.next_page_number }}" class="btn-primary">Siguiente →</a>
+  {% else %}
+  <a href="{% url 'saq:pretest_resultados' pretest.pk %}" class="btn-primary">Ver resultados →</a>
+  {% endif %}
+</div>
+
+<div id="toast" class="toast" style="display:none">✓ Guardado</div>
+
+{% endblock %}
+
+
+{% block extra_js %}
+<script>
+const CSRF      = '{{ csrf_token }}';
+const URL_GUARDAR = '{% url "saq:pretest_guardar_respuesta" pretest.pk %}';
+
+// Estado local: { "pregunta_pk": "valor_guardado" }
+const GUARDADAS = {{ respuestas_guardadas_json|safe }};
+
+// ── Inicialización ───────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  Object.entries(GUARDADAS).forEach(([pk, val]) => {
+    const card = document.getElementById('qcard-' + pk);
+    if (!card) return;
+    const tipo = card.dataset.tipo;
+
+    if (tipo === 'elegibilidad' || tipo === 'checkbox_si_no') {
+      card.querySelectorAll('.ans-btn').forEach(btn => {
+        if (btn.dataset.val === val) btn.classList.add('selected');
+      });
+
+    } else if (tipo === 'checkbox_multi') {
+      try {
+        const arr = JSON.parse(val);
+        card.querySelectorAll('.pretest-multi-check').forEach(chk => {
+          chk.checked = arr.includes(chk.value);
+        });
+      } catch(e) {}
+
+    } else if (tipo === 'select') {
+      const sel = card.querySelector('.pretest-select');
+      if (sel && val) sel.value = val;
+
+    } else if (tipo === 'texto_corto' || tipo === 'texto_largo') {
+      const el = card.querySelector('.pretest-texto');
+      if (el && val) {
+        el.value = val;
+        actualizarCharcount(pk, val, el);
+      }
+
+    } else if (tipo === 'numero') {
+      const el = card.querySelector('.pretest-numero');
+      if (el && val) el.value = val;
+
+    } else if (tipo === 'fecha') {
+      const el = card.querySelector('.pretest-fecha');
+      if (el && val) el.value = val;
+    }
+  });
+
+  actualizarContadoresElegibilidad();
+});
+
+// ── Responder elegibilidad / checkbox_si_no ─────────────────
+function responder(pk, val, btn) {
+  btn.closest('.pretest-answers')
+     .querySelectorAll('.ans-btn')
+     .forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  GUARDADAS[String(pk)] = val;
+  actualizarContadoresElegibilidad();
+  guardar(pk, val);
+}
+
+// ── Responder checkbox_multi ─────────────────────────────────
+function responderMulti(pk) {
+  const wrap = document.querySelector(`.pretest-multi-wrap[data-pk="${pk}"]`);
+  const seleccionados = [];
+  wrap.querySelectorAll('.pretest-multi-check:checked')
+      .forEach(chk => seleccionados.push(chk.value));
+  const val = JSON.stringify(seleccionados);
+  GUARDADAS[String(pk)] = val;
+  guardar(pk, seleccionados);   // enviamos la lista; el servidor la serializa
+}
+
+// ── Responder texto / select / número / fecha ────────────────
+function responderTexto(pk, val) {
+  GUARDADAS[String(pk)] = val;
+  guardar(pk, val);
+}
+
+// Debounce para inputs de texto (evita una llamada por tecla)
+const _timers = {};
+function responderTextoDebounce(pk, val) {
+  const el = document.querySelector(`[data-pk="${pk}"].pretest-texto`);
+  if (el) actualizarCharcount(pk, val, el);
+  clearTimeout(_timers[pk]);
+  _timers[pk] = setTimeout(() => responderTexto(pk, val), 800);
+}
+
+function actualizarCharcount(pk, val, el) {
+  const cc = document.getElementById('cc-' + pk);
+  if (cc) cc.textContent = `${val.length} / ${el.maxLength || 500}`;
+}
+
+// ── Llamada AJAX ─────────────────────────────────────────────
+function guardar(pk, val) {
+  fetch(URL_GUARDAR, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
+    body: JSON.stringify({ pregunta_id: pk, respuesta: val }),
+  })
+  .then(r => r.json())
+  .then(d => {
+    if (d.success) {
+      document.getElementById('prog-fill').style.width = d.porcentaje + '%';
+      document.getElementById('prog-label').innerHTML  =
+        `<strong>${d.respondidas}</strong> / ${d.total} respondidas`;
+      const ind = document.getElementById('saved-' + pk);
+      if (ind) { ind.style.display = 'block'; setTimeout(() => ind.style.display='none', 1500); }
+      mostrarToast();
+    }
+  })
+  .catch(console.error);
+}
+
+// ── Contadores de elegibilidad (sólo esas preguntas) ─────────
+function actualizarContadoresElegibilidad() {
+  let si=0, no=0, na=0, nt=0;
+  document.querySelectorAll('.pretest-question-card[data-tipo="elegibilidad"]')
+    .forEach(card => {
+      const v = GUARDADAS[card.dataset.pk];
+      if (v === 'si')          si++;
+      else if (v === 'no')     no++;
+      else if (v === 'na')     na++;
+      else if (v === 'no_probado') nt++;
+    });
+  document.getElementById('n-si').textContent = si;
+  document.getElementById('n-no').textContent = no;
+  document.getElementById('n-na').textContent = na;
+  document.getElementById('n-nt').textContent = nt;
+}
+
+// ── Toast ────────────────────────────────────────────────────
+let toastTimer;
+function mostrarToast() {
+  const t = document.getElementById('toast');
+  t.style.display = 'block';
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.style.display = 'none', 1600);
+}
+</script>
+{% endblock %}

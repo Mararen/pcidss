@@ -33,15 +33,13 @@
         {% endif %}
 
         {% if perms.users.ver_saq %}
-        <a href="{% url 'saq_lista' %}">
+        <a href="{% url 'saq:saq_lista' %}">
             <i data-feather="file-text"></i> SAQ
-        </a>
         {% endif %}
 
-        {% if perms.users.usar_pretest %}
-        <a href="{% url 'pretest_home' %}">
+        {% if perms.users.ver_pretest %}
+        <a href="{% url 'saq:pretest_lista' %}">
             <i data-feather="check-square"></i> Pre-Test
-        </a>
         {% endif %}
 
         {% if perms.users.ver_evidencias %}

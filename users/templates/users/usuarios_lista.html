@@ -12,9 +12,13 @@
     </div>
 
     <div style="display:flex; align-items:center; gap:15px;">
+
+        {% if perms.users.gestionar_usuarios %}
         <a href="{% url 'usuario_crear' %}" class="btn-primary">
             + Nuevo Usuario
         </a>
+        {% endif %}
+
         <div class="page-header-logo-min">
             <img src="{% static 'users/img/logo.png' %}">
         </div>
@@ -35,7 +39,10 @@
             <td>Usuario</td>
             <td>Nombre</td>
             <td>Email</td>
+            <td>Rol</td>
             <td>Estado</td>
+            <td>Creación</td>
+            <td>Última modificación</td>
             <td>Acciones</td>
         </tr>
     </thead>
@@ -48,11 +55,25 @@
             <td>{{ user.email }}</td>
 
             <td>
+                {% if user.is_superuser %}
+                    Administrador Global
+                {% else %}
+                    {{ user.groups.first.name|default:"Sin rol" }}
+                {% endif %}
+            </td>
+
+            <td>
                 {% if user.is_active %}
                     <span class="badge badge-success">Activo</span>
                 {% else %}
                     <span class="badge badge-danger">Inactivo</span>
                 {% endif %}
+            </td>
+
+            <td>{{ user.date_joined|date:"Y-m-d H:i" }}</td>
+
+            <td>
+                {{ user.ultima_modificacion|date:"Y-m-d H:i"|default:"Sin cambios" }}
             </td>
 
             <td>
@@ -61,6 +82,7 @@
                         <i data-feather="eye"></i>
                     </a>
 
+                    {% if perms.users.gestionar_usuarios %}
                     <a href="{% url 'usuario_editar' user.pk %}" class="btn-icon">
                         <i data-feather="edit"></i>
                     </a>
@@ -72,6 +94,7 @@
                             <i data-feather="toggle-left"></i>
                         {% endif %}
                     </a>
+                    {% endif %}
                 </div>
             </td>
         </tr>
@@ -79,4 +102,23 @@
     </tbody>
 </table>
 
+<!-- PAGINACIÓN -->
+<div class="pagination">
+    <div>
+        Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}
+    </div>
+
+    <div class="pagination-controls">
+        {% if page_obj.has_previous %}
+            <a href="?page={{ page_obj.previous_page_number }}">Anterior</a>
+        {% endif %}
+
+        <span class="current">{{ page_obj.number }}</span>
+
+        {% if page_obj.has_next %}
+            <a href="?page={{ page_obj.next_page_number }}">Siguiente</a>
+        {% endif %}
+    </div>
+</div>
+			
 {% endblock %}

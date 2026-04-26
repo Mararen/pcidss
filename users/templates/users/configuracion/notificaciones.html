@@ -1,0 +1,77 @@
+{% extends 'users/configuracion/base.html' %}
+
+{% block config_content %}
+
+<form id="formNotif">
+    {% csrf_token %}
+
+    <label>Tipo</label>
+    <select name="tipo">
+        <option value="alerta">Alerta</option>
+        <option value="recordatorio">Recordatorio</option>
+    </select>
+
+    <label>Días de antelación</label>
+    <input type="number" name="dias" required>
+
+    <label>Canal</label>
+    <select name="canal">
+        <option value="correo">Correo</option>
+        <option value="sistema">Sistema</option>
+    </select>
+
+    <button type="button" class="btn-inline" onclick="guardarNotif()">
+    Agregar
+</button>
+</form>
+
+<table>
+    <thead>
+        <tr>
+            <th>Tipo</th>
+            <th>Días</th>
+            <th>Canal</th>
+            <th>Estado</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for n in notificaciones %}
+        <tr>
+            <td>{{ n.tipo }}</td>
+            <td>{{ n.dias_antes }}</td>
+            <td>{{ n.canal }}</td>
+            <td>{{ n.activo|yesno:"Activo,Inactivo" }}</td>
+        </tr>
+        {% empty %}
+        <tr>
+            <td colspan="4">No hay notificaciones configuradas</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function guardarNotif() {
+    const form = document.getElementById("formNotif");
+
+    fetch("", {
+        method: "POST",
+        body: new FormData(form),
+        headers: {
+            "X-CSRFToken": document.querySelector('[name=csrfmiddlewaretoken]').value
+        }
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert(data.error);
+        }
+    });
+}
+</script>
+{% endblock %}

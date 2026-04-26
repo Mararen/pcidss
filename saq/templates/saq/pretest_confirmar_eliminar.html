@@ -1,0 +1,63 @@
+{% extends 'users/base.html' %}
+
+{% block title %}Eliminar PreTest #{{ pretest.pk }} | PCI Cert Pro{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+  <div class="page-header-text">
+    <h1>Eliminar PreTest</h1>
+  </div>
+  <a href="{% url 'saq:pretest_lista' %}" class="btn-secondary">
+    <i data-feather="arrow-left"></i> Volver
+  </a>
+</div>
+
+<div class="form-card" style="max-width:520px">
+
+  <div class="alert alert--danger" style="margin-bottom:1.5rem">
+    <i data-feather="alert-triangle"></i>
+    <div>
+      <strong>Esta acción no se puede deshacer.</strong>
+      <p style="margin:.4rem 0 0">
+        Se eliminarán todas las respuestas asociadas a este PreTest.
+      </p>
+    </div>
+  </div>
+
+  <div class="detail-block" style="margin-bottom:1.5rem">
+    <div class="detail-row">
+      <span class="detail-label">ID</span>
+      <span>#{{ pretest.pk }}</span>
+    </div>
+    <div class="detail-row">
+      <span class="detail-label">Entidad</span>
+      <span>{{ pretest.entidad.nombre_empresa }}</span>
+    </div>
+    <div class="detail-row">
+      <span class="detail-label">Estado</span>
+      <span>{{ pretest.get_estado_display }}</span>
+    </div>
+    <div class="detail-row">
+      <span class="detail-label">Respuestas</span>
+      <span>{{ pretest.respuestas.count }} guardadas</span>
+    </div>
+    <div class="detail-row">
+      <span class="detail-label">Creado</span>
+      <span>{{ pretest.fecha_creacion|date:"d/m/Y H:i" }}</span>
+    </div>
+  </div>
+
+  <form method="post">
+    {% csrf_token %}
+    <div class="form-actions">
+      <a href="{% url 'saq:pretest_lista' %}" class="btn-secondary">Cancelar</a>
+      <button type="submit" class="btn-danger">
+        <i data-feather="trash-2"></i> Sí, eliminar PreTest
+      </button>
+    </div>
+  </form>
+
+</div>
+
+{% endblock %}

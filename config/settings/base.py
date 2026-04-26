@@ -1,13 +1,18 @@
 import os
 from pathlib import Path
+from dotenv import load_dotenv
+
+load_dotenv()
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
 # =========================
-# SECURITY
+# SECURITY (BASE)
 # =========================
-SECRET_KEY = 'django-insecure-for1de=@tawv+vyw#*(43v@vul=nz9$mxdt1wuji1q36j5yb'
-DEBUG = True
+SECRET_KEY = os.getenv("DJANGO_SECRET_KEY")
+
+DEBUG = False
+
 ALLOWED_HOSTS = []
 
 # =========================
@@ -20,9 +25,11 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django_extensions',
 
     'users',
     'saq',
+    'helpdesk',
 ]
 
 # =========================
@@ -59,6 +66,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'saq.context_processors.saq_urls',
             ],
         },
     },
@@ -69,7 +77,6 @@ TEMPLATES = [
 # =========================
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
-    {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator'},
     {'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator'},
     {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
 ]

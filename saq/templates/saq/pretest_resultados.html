@@ -1,0 +1,180 @@
+{% extends 'users/base.html' %}
+{% load static %}
+
+{% block title %}Resultados PreTest #{{ pretest.pk }} | PCI Cert Pro{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+  <div class="page-header-text">
+    <h1>Resultados — {{ pretest.entidad.nombre_empresa }}</h1>
+    <p>PreTest #{{ pretest.pk }} &nbsp;·&nbsp; PCI DSS v4.0.1</p>
+  </div>
+  <div style="display:flex;gap:.5rem">
+    <a href="{% url 'saq:pretest_cuestionario' pretest.pk %}" class="btn-secondary">
+      <i data-feather="edit-3"></i> Volver al cuestionario
+    </a>
+    <a href="{% url 'saq:pretest_lista' %}" class="btn-ghost">
+      <i data-feather="list"></i> Lista de PreTests
+    </a>
+  </div>
+</div>
+
+{# ── Resumen de progreso ──────────────────────────────────────── #}
+<div class="pretest-progress-card" style="margin-bottom:1.5rem">
+  <div class="pretest-progress-info">
+    <span class="text-muted">Preguntas respondidas</span>
+    <span>
+      <strong>{{ total_respondidas }}</strong> / {{ total_preguntas }}
+      {% if total_respondidas < total_preguntas %}
+        <span class="badge badge--warning" style="margin-left:.5rem">Incompleto</span>
+      {% else %}
+        <span class="badge badge--success" style="margin-left:.5rem">Completo</span>
+      {% endif %}
+    </span>
+  </div>
+  <div class="progress-bar-wrap">
+    <div class="progress-bar-fill"
+         style="width:{% if total_preguntas %}{{ total_respondidas|floatformat:0 }}{% else %}0{% endif %}%">
+    </div>
+  </div>
+</div>
+
+{# ── SAQ recomendado ─────────────────────────────────────────── #}
+{% if saq_recomendado %}
+<div class="alert alert--success" style="margin-bottom:1.5rem;align-items:flex-start">
+  <i data-feather="check-circle" style="margin-top:2px;flex-shrink:0"></i>
+  <div>
+    <strong style="font-size:1.1rem">SAQ recomendado: {{ saq_recomendado }}</strong>
+    {% if saq_info %}
+    <p style="margin:.5rem 0 0;color:var(--text-secondary)">{{ saq_info }}</p>
+    {% endif %}
+  </div>
+</div>
+{% else %}
+<div class="alert alert--warning" style="margin-bottom:1.5rem">
+  <i data-feather="alert-circle"></i>
+  <div>
+    <strong>No se pudo determinar un SAQ recomendado.</strong>
+    <p style="margin:.3rem 0 0">Completa más preguntas para obtener un resultado.</p>
+  </div>
+</div>
+{% endif %}
+
+{# ── Tabla de elegibilidad por SAQ ───────────────────────────── #}
+<div class="section-header" style="margin-bottom:.75rem">
+  <h2 style="font-size:1rem;font-weight:600;margin:0">Elegibilidad por tipo de SAQ</h2>
+  <small class="text-muted">Basado en preguntas de elegibilidad (Part 2h AOC)</small>
+</div>
+
+<div class="table-wrapper" style="margin-bottom:2rem">
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>SAQ</th>
+        <th style="width:80px" class="text-right">Preguntas</th>
+        <th style="width:70px" class="text-right">Sí</th>
+        <th style="width:70px" class="text-right">No</th>
+        <th style="width:70px" class="text-right">N/A</th>
+        <th style="width:90px" class="text-right">No probado</th>
+        <th style="width:80px" class="text-right">% Sí</th>
+        <th style="width:100px" class="text-center">Estado</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for r in resultado_por_tipo %}
+      <tr {% if r.es_recomendado %}class="row--highlight"{% endif %}>
+        <td>
+          <span class="saq-chip saq-chip--{{ r.tipo|lower }}">{{ r.tipo }}</span>
+          {% if r.es_recomendado %}
+            <span class="badge badge--success" style="margin-left:.4rem">Recomendado</span>
+          {% endif %}
+        </td>
+        <td class="text-right">{{ r.total }}</td>
+        <td class="text-right text-success">{{ r.si }}</td>
+        <td class="text-right text-danger">{{ r.no }}</td>
+        <td class="text-right text-muted">{{ r.na }}</td>
+        <td class="text-right text-muted">{{ r.no_probado }}</td>
+        <td class="text-right"><strong>{{ r.pct }}%</strong></td>
+        <td class="text-center">
+          {% if r.total == 0 %}
+            <span class="text-muted">—</span>
+          {% elif r.elegible %}
+            <span class="badge badge--success">Elegible</span>
+          {% else %}
+            <span class="badge badge--danger">No elegible</span>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{# ── Info de todos los SAQ ───────────────────────────────────── #}
+<details style="margin-bottom:2rem">
+  <summary style="cursor:pointer;font-weight:600;padding:.5rem 0">
+    <i data-feather="info" style="vertical-align:middle;width:16px"></i>
+    ¿Qué significa cada tipo de SAQ?
+  </summary>
+  <div class="table-wrapper" style="margin-top:.75rem">
+    <table class="data-table">
+      <thead>
+        <tr><th style="width:100px">SAQ</th><th>Descripción</th></tr>
+      </thead>
+      <tbody>
+        {% for tipo, desc in saq_info_todos.items %}
+        <tr>
+          <td><span class="saq-chip saq-chip--{{ tipo|lower }}">{{ tipo }}</span></td>
+          <td style="font-size:.85rem">{{ desc }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</details>
+
+{# ── Detalle de respuestas ────────────────────────────────────── #}
+{% if respuestas_resumen %}
+<div class="section-header" style="margin-bottom:.75rem">
+  <h2 style="font-size:1rem;font-weight:600;margin:0">Resumen de respuestas</h2>
+  <small class="text-muted">Para prellenado del AOC</small>
+</div>
+
+<div class="table-wrapper">
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th style="width:60px">#</th>
+        <th style="width:80px">SAQ</th>
+        <th style="width:160px">Sección AOC</th>
+        <th>Pregunta</th>
+        <th style="width:130px">Respuesta</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for r in respuestas_resumen %}
+      <tr>
+        <td>{{ r.numero }}</td>
+        <td>
+          <span class="saq-chip saq-chip--{{ r.tipo_saq|lower }}">{{ r.tipo_saq }}</span>
+        </td>
+        <td style="font-size:.8rem;color:var(--text-secondary)">{{ r.seccion }}</td>
+        <td style="font-size:.88rem">{{ r.pregunta|truncatechars:100 }}</td>
+        <td>
+          <span class="badge
+            {% if r.respuesta == 'Sí' %}badge--success
+            {% elif r.respuesta == 'No' %}badge--danger
+            {% elif r.respuesta == 'N/A' %}badge--neutral
+            {% else %}badge--warning{% endif %}">
+            {{ r.respuesta }}
+          </span>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+
+{% endblock %}
