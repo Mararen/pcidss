@@ -50,13 +50,14 @@ def login_view(request):
     recaptcha_site_key = os.environ.get('RECAPTCHA_PUBLIC_KEY')
 
     if request.method == "POST":
-        # Validar reCAPTCHA
+        # Validar reCAPTCHA v3
         recaptcha_response = request.POST.get('g-recaptcha-response')
         r = requests.post('https://www.google.com/recaptcha/api/siteverify', data={
             'secret': os.environ.get('RECAPTCHA_PRIVATE_KEY'),
             'response': recaptcha_response,
         })
-        if not r.json().get('success'):
+        result = r.json()
+        if not result.get('success') or result.get('score', 0) < 0.5:
             return render(request, "users/login.html", {
                 "error": "Verifica que no eres un robot.",
                 "recaptcha_site_key": recaptcha_site_key,
@@ -94,8 +95,7 @@ def logout_view(request):
 @permission_required('users.ver_dashboard', raise_exception=True)
 def dashboard(request):
     return render(request, "users/dashboard.html")
-
-
+    
 # ─────────────────────────────────────────────
 # PASSWORD
 # ─────────────────────────────────────────────
