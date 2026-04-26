@@ -1,5 +1,6 @@
 import os
 import requests
+import urllib.parse
 from datetime import date
 
 from django.shortcuts import render, redirect, get_object_or_404
@@ -46,7 +47,21 @@ def registrar_log(request, accion, modulo, descripcion, target_user=None):
 # ─────────────────────────────────────────────
 
 def login_view(request):
+    recaptcha_site_key = os.environ.get('RECAPTCHA_PUBLIC_KEY')
+
     if request.method == "POST":
+        # Validar reCAPTCHA
+        recaptcha_response = request.POST.get('g-recaptcha-response')
+        r = requests.post('https://www.google.com/recaptcha/api/siteverify', data={
+            'secret': os.environ.get('RECAPTCHA_PRIVATE_KEY'),
+            'response': recaptcha_response,
+        })
+        if not r.json().get('success'):
+            return render(request, "users/login.html", {
+                "error": "Verifica que no eres un robot.",
+                "recaptcha_site_key": recaptcha_site_key,
+            })
+
         user = authenticate(
             request,
             username=request.POST.get("username"),
@@ -58,9 +73,14 @@ def login_view(request):
             registrar_log(request, "LOGIN", "AUTH", f"{user.username} login")
             return redirect("dashboard")
 
-        return render(request, "users/login.html", {"error": "Credenciales incorrectas"})
+        return render(request, "users/login.html", {
+            "error": "Credenciales incorrectas",
+            "recaptcha_site_key": recaptcha_site_key,
+        })
 
-    return render(request, "users/login.html")
+    return render(request, "users/login.html", {
+        "recaptcha_site_key": recaptcha_site_key,
+    })
 
 
 @login_required

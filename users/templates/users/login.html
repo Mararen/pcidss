@@ -37,9 +37,12 @@
 
                 <label class="remember">
                     <input type="checkbox" name="remember"
-				{% if request.POST.remember %}checked{% endif %}>
+                        {% if request.POST.remember %}checked{% endif %}>
                     Recordarme
                 </label>
+
+                <!-- reCAPTCHA -->
+                <div class="g-recaptcha" data-sitekey="{{ recaptcha_site_key }}"></div>
 
                 <button type="submit" class="btn-primary">
                     Iniciar Sesión
@@ -55,5 +58,6 @@
 
     </section>
 
+    <script src="https://www.google.com/recaptcha/api.js"></script>
 </body>
 </html>
