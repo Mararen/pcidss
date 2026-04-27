@@ -6,35 +6,53 @@
 <div class="page-header">
     <div class="page-header-text">
         <h1>Tickets</h1>
-        <p>Gestión de incidencias</p>
+        <p>Gestión de incidencias y soporte</p>
     </div>
-
     <div class="page-actions">
         <a href="{% url 'helpdesk:ticket_nuevo' %}" class="btn-primary">
-            Nuevo ticket
+            <i data-feather="plus"></i> Nuevo ticket
         </a>
     </div>
 </div>
 
+{# ── Filtros ── #}
+<form method="get" class="ticket-filters">
+    <select name="estado" onchange="this.form.submit()">
+        <option value="">Todos los estados</option>
+        <option value="abierto"  {% if request.GET.estado == 'abierto'  %}selected{% endif %}>Abierto</option>
+        <option value="proceso"  {% if request.GET.estado == 'proceso'  %}selected{% endif %}>En proceso</option>
+        <option value="resuelto" {% if request.GET.estado == 'resuelto' %}selected{% endif %}>Resuelto</option>
+        <option value="cerrado"  {% if request.GET.estado == 'cerrado'  %}selected{% endif %}>Cerrado</option>
+    </select>
+
+    <select name="prioridad" onchange="this.form.submit()">
+        <option value="">Todas las prioridades</option>
+        <option value="baja"    {% if request.GET.prioridad == 'baja'    %}selected{% endif %}>Baja</option>
+        <option value="media"   {% if request.GET.prioridad == 'media'   %}selected{% endif %}>Media</option>
+        <option value="alta"    {% if request.GET.prioridad == 'alta'    %}selected{% endif %}>Alta</option>
+        <option value="critica" {% if request.GET.prioridad == 'critica' %}selected{% endif %}>Crítica</option>
+    </select>
+</form>
+
+{# ── Tabla ── #}
 <table class="modern-table">
     <thead>
         <tr>
-            <th>ID</th>
+            <th>#</th>
             <th>Título</th>
             <th>Estado</th>
             <th>Prioridad</th>
             <th>Entidad</th>
+            <th>Creado</th>
         </tr>
     </thead>
     <tbody>
         {% for t in tickets %}
         <tr>
-            <td>#{{ t.id }}</td>
+            <td style="color: var(--text-muted); font-size: 13px;">#{{ t.id }}</td>
 
             <td class="ticket-title">
-                <a href="{% url 'helpdesk:ticket_detalle' t.pk %}">
-                    {{ t.titulo }}
-                </a>
+                <a href="{% url 'helpdesk:ticket_detalle' t.pk %}">{{ t.titulo }}</a>
             </td>
 
             <td>
@@ -49,7 +67,20 @@
                 </span>
             </td>
 
-            <td>{{ t.entidad.nombre_empresa }}</td>
+            <td style="font-size: 13px;">{{ t.entidad.nombre_empresa }}</td>
+
+            <td style="font-size: 12px; color: var(--text-muted);">
+                {{ t.fecha_creacion|date:"d/m/Y" }}
+            </td>
+        </tr>
+        {% empty %}
+        <tr>
+            <td colspan="6">
+                <div class="ticket-empty">
+                    <i data-feather="inbox"></i>
+                    <p>No hay tickets{% if request.GET.estado or request.GET.prioridad %} con estos filtros{% endif %}.</p>
+                </div>
+            </td>
         </tr>
         {% endfor %}
     </tbody>

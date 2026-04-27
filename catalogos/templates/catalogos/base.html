@@ -1,0 +1,56 @@
+{% extends 'users/base.html' %}
+
+{% block title %}Catálogos{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+    <div class="page-header-text">
+        <h1>Catálogos</h1>
+        <p>Administra los valores de referencia del sistema.</p>
+    </div>
+</div>
+
+<div class="config-tabs">
+    <a href="{% url 'catalogos:tipo_entidad' %}" class="{% if request.resolver_match.url_name == 'tipo_entidad' %}active{% endif %}">
+        Tipos de entidad
+    </a>
+
+    <a href="{% url 'catalogos:paises' %}" class="{% if request.resolver_match.url_name == 'paises' %}active{% endif %}">
+        Países
+    </a>
+
+    <a href="{% url 'catalogos:tipo_contrato' %}" class="{% if request.resolver_match.url_name == 'tipo_contrato' %}active{% endif %}">
+        Tipos de contrato
+    </a>
+
+    <a href="{% url 'catalogos:nivel_riesgo' %}" class="{% if request.resolver_match.url_name == 'nivel_riesgo' %}active{% endif %}">
+        Niveles de riesgo
+    </a>
+
+    <a href="{% url 'catalogos:tipo_saq' %}" class="{% if request.resolver_match.url_name == 'tipo_saq' %}active{% endif %}">
+        Tipos de SAQ
+    </a>
+
+    <a href="{% url 'catalogos:tipo_documento' %}" class="{% if request.resolver_match.url_name == 'tipo_documento' %}active{% endif %}">
+        Tipos de documento
+    </a>
+
+    <a href="{% url 'catalogos:estado_certificacion' %}" class="{% if request.resolver_match.url_name == 'estado_certificacion' %}active{% endif %}">
+        Estados de certificación
+    </a>
+
+    <a href="{% url 'catalogos:tipo_rol' %}" class="{% if request.resolver_match.url_name == 'tipo_rol' %}active{% endif %}">
+        Tipos de rol
+    </a>
+
+    <a href="{% url 'catalogos:idiomas' %}" class="{% if request.resolver_match.url_name == 'idiomas' %}active{% endif %}">
+        Idiomas
+    </a>
+</div>
+
+<div class="config-content">
+    {% block cat_content %}{% endblock %}
+</div>
+
+{% endblock %}

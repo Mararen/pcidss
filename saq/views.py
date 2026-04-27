@@ -12,7 +12,8 @@ from users.models import Entidad
 from users.views import registrar_log
 
 TIPOS_SAQ_ORDEN = ['A', 'AEP', 'B', 'BIP', 'C', 'CTV', 'D-COMERCIO', 'D-PROVEEDOR']
-SAQ_TYPES = [(t, t) for t in TIPOS_SAQ_ORDEN]
+SAQ_TYPES       = [(t, t) for t in TIPOS_SAQ_ORDEN]
+TIPOS_VALIDOS   = TIPOS_SAQ_ORDEN  # alias para validaciones
 
 TIPO_INPUT_CHOICES = [
     ('elegibilidad',   'Sí / No / N/A / No probado'),
@@ -24,6 +25,9 @@ TIPO_INPUT_CHOICES = [
     ('numero',         'Número'),
     ('fecha',          'Fecha'),
 ]
+TIPOS_INPUT_VALIDOS = [t for t, _ in TIPO_INPUT_CHOICES]
+
+MAX_CHARS_RESPUESTA = 5000  # límite global de longitud para respuestas de texto
 
 
 # ════════════════════════════════════════════════════════════════
@@ -71,27 +75,52 @@ def saq_crear(request):
         numero          = request.POST.get('numero', '').strip()
         tipo_saq        = request.POST.get('tipo_saq', '').strip()
         tipos_saq_extra = request.POST.get('tipos_saq_extra', '').strip()
-        tipo_input      = request.POST.get('tipo_input', 'elegibilidad')
+        tipo_input      = request.POST.get('tipo_input', 'elegibilidad').strip()
         seccion_aoc     = request.POST.get('seccion_aoc', 'Part 2h. Eligibility').strip()
         pregunta_es     = request.POST.get('pregunta_es', '').strip()
         pregunta_en     = request.POST.get('pregunta_en', '').strip()
         opciones_json   = request.POST.get('opciones_json', '').strip()
         max_chars       = request.POST.get('max_chars', '').strip() or None
 
-        # Validaciones
+        # ── Campos obligatorios ──────────────────────────────────
         if not numero or not tipo_saq or not pregunta_es:
             errors.append('Número, Tipo SAQ y Pregunta ES son obligatorios.')
-        elif not numero.isdigit():
-            errors.append('El número debe ser un entero positivo.')
-        elif PreguntaSAQ.objects.filter(numero=numero).exists():
-            errors.append(f'Ya existe una pregunta con el número {numero}.')
+        else:
+            # ── Tipo de dato: número entero positivo ─────────────
+            if not numero.isdigit():
+                errors.append('El número debe ser un entero positivo.')
+            # ── Unicidad ─────────────────────────────────────────
+            elif PreguntaSAQ.objects.filter(numero=numero).exists():
+                errors.append(f'Ya existe una pregunta con el número {numero}.')
 
+            # ── Tipo SAQ contra lista permitida ──────────────────
+            if tipo_saq not in TIPOS_VALIDOS:
+                errors.append(f'Tipo SAQ inválido. Opciones: {", ".join(TIPOS_VALIDOS)}')
+
+            # ── Tipo input contra lista permitida ────────────────
+            if tipo_input not in TIPOS_INPUT_VALIDOS:
+                errors.append('Tipo de input no reconocido.')
+
+            # ── Longitud máxima de textos ─────────────────────────
+            if len(pregunta_es) > 2000:
+                errors.append('La pregunta en español no puede superar 2000 caracteres.')
+            if len(pregunta_en) > 2000:
+                errors.append('La pregunta en inglés no puede superar 2000 caracteres.')
+
+        # ── Opciones JSON ────────────────────────────────────────
         opciones_parsed = None
         if opciones_json:
             try:
                 opciones_parsed = json.loads(opciones_json)
+                if not isinstance(opciones_parsed, list):
+                    errors.append('Opciones JSON debe ser una lista, ej: ["Op1","Op2"].')
             except json.JSONDecodeError:
-                errors.append('Opciones JSON no tiene formato válido (debe ser una lista, ej: ["Op1","Op2"]).')
+                errors.append('Opciones JSON no tiene formato válido.')
+
+        # ── max_chars: rango razonable ───────────────────────────
+        if max_chars:
+            if not max_chars.isdigit() or not (1 <= int(max_chars) <= 10000):
+                errors.append('max_chars debe ser un número entre 1 y 10 000.')
 
         if not errors:
             p = PreguntaSAQ.objects.create(
@@ -103,24 +132,23 @@ def saq_crear(request):
                 pregunta_es     = pregunta_es,
                 pregunta_en     = pregunta_en,
                 opciones_json   = opciones_parsed,
-                max_chars       = int(max_chars) if max_chars and max_chars.isdigit() else None,
+                max_chars       = int(max_chars) if max_chars else None,
             )
             registrar_log(request, 'CREATE', 'SAQ', f'Pregunta #{p.numero} creada')
             return redirect('saq:saq_lista')
 
-        # Rellenar el form con lo enviado para no perder los datos
         form_data = request.POST
 
     else:
         form_data = {}
 
     return render(request, 'saq/saq_form.html', {
-        'titulo':              'Nueva pregunta SAQ',
-        'accion':              'Crear',
-        'tipos':               SAQ_TYPES,
-        'tipo_input_choices':  TIPO_INPUT_CHOICES,
-        'form':                form_data,
-        'errors':              errors,
+        'titulo':             'Nueva pregunta SAQ',
+        'accion':             'Crear',
+        'tipos':              SAQ_TYPES,
+        'tipo_input_choices': TIPO_INPUT_CHOICES,
+        'form':               form_data,
+        'errors':             errors,
     })
 
 
@@ -134,22 +162,45 @@ def saq_editar(request, pk):
     if request.method == 'POST':
         tipo_saq        = request.POST.get('tipo_saq', '').strip()
         tipos_saq_extra = request.POST.get('tipos_saq_extra', '').strip()
-        tipo_input      = request.POST.get('tipo_input', pregunta.tipo_input)
+        tipo_input      = request.POST.get('tipo_input', pregunta.tipo_input).strip()
         seccion_aoc     = request.POST.get('seccion_aoc', '').strip()
         pregunta_es     = request.POST.get('pregunta_es', '').strip()
         pregunta_en     = request.POST.get('pregunta_en', '').strip()
         opciones_json   = request.POST.get('opciones_json', '').strip()
         max_chars       = request.POST.get('max_chars', '').strip() or None
 
+        # ── Campos obligatorios ──────────────────────────────────
         if not tipo_saq or not pregunta_es:
             errors.append('Tipo SAQ y Pregunta ES son obligatorios.')
 
-        opciones_parsed = pregunta.opciones_json  # mantiene valor actual si no se envía
+        # ── Tipo SAQ contra lista permitida ──────────────────────
+        if tipo_saq and tipo_saq not in TIPOS_VALIDOS:
+            errors.append(f'Tipo SAQ inválido. Opciones: {", ".join(TIPOS_VALIDOS)}')
+
+        # ── Tipo input contra lista permitida ────────────────────
+        if tipo_input and tipo_input not in TIPOS_INPUT_VALIDOS:
+            errors.append('Tipo de input no reconocido.')
+
+        # ── Longitud máxima de textos ────────────────────────────
+        if len(pregunta_es) > 2000:
+            errors.append('La pregunta en español no puede superar 2000 caracteres.')
+        if len(pregunta_en) > 2000:
+            errors.append('La pregunta en inglés no puede superar 2000 caracteres.')
+
+        # ── Opciones JSON ────────────────────────────────────────
+        opciones_parsed = pregunta.opciones_json
         if opciones_json:
             try:
                 opciones_parsed = json.loads(opciones_json)
+                if not isinstance(opciones_parsed, list):
+                    errors.append('Opciones JSON debe ser una lista, ej: ["Op1","Op2"].')
             except json.JSONDecodeError:
                 errors.append('Opciones JSON no tiene formato válido.')
+
+        # ── max_chars: rango razonable ───────────────────────────
+        if max_chars:
+            if not max_chars.isdigit() or not (1 <= int(max_chars) <= 10000):
+                errors.append('max_chars debe ser un número entre 1 y 10 000.')
 
         if not errors:
             pregunta.tipo_saq        = tipo_saq
@@ -159,7 +210,7 @@ def saq_editar(request, pk):
             pregunta.pregunta_es     = pregunta_es
             pregunta.pregunta_en     = pregunta_en
             pregunta.opciones_json   = opciones_parsed
-            pregunta.max_chars       = int(max_chars) if max_chars and max_chars.isdigit() else None
+            pregunta.max_chars       = int(max_chars) if max_chars else None
             pregunta.save()
             registrar_log(request, 'UPDATE', 'SAQ', f'Pregunta #{pregunta.numero} actualizada')
             return redirect('saq:saq_lista')
@@ -167,7 +218,6 @@ def saq_editar(request, pk):
         form_data = request.POST
 
     else:
-        # Pre-cargar datos actuales en el "form dict"
         form_data = {
             'numero':          pregunta.numero,
             'tipo_saq':        pregunta.tipo_saq,
@@ -235,7 +285,12 @@ def pretest_lista(request):
 @login_required
 def pretest_nuevo(request):
     if request.method == 'POST':
-        entidad = get_object_or_404(Entidad, pk=request.POST.get('entidad'))
+        # Validar que la entidad existe Y está activa
+        entidad = get_object_or_404(
+            Entidad,
+            pk=request.POST.get('entidad'),
+            is_active=True,          # solo entidades activas
+        )
         pretest = PreTest.objects.create(entidad=entidad, creado_por=request.user)
         registrar_log(request, 'CREATE', 'PRETEST',
                       f'PreTest #{pretest.pk} para {entidad}')
@@ -285,13 +340,33 @@ def pretest_cuestionario(request, pk):
 @require_POST
 def pretest_guardar_respuesta(request, pk):
     pretest = get_object_or_404(PreTest, pk=pk)
-    data    = json.loads(request.body)
 
-    pregunta = get_object_or_404(PreguntaSAQ, pk=data['pregunta_id'])
-    valor    = data.get('respuesta', '')
+    # ── Parsear body JSON ────────────────────────────────────────
+    try:
+        data = json.loads(request.body)
+    except json.JSONDecodeError:
+        return JsonResponse({'error': 'El cuerpo de la petición no es JSON válido.'}, status=400)
 
+    pregunta_id = data.get('pregunta_id')
+    valor       = data.get('respuesta', '')
+
+    # ── Validar pregunta_id es entero positivo ───────────────────
+    if not str(pregunta_id).isdigit():
+        return JsonResponse({'error': 'pregunta_id debe ser un entero positivo.'}, status=400)
+
+    # ── Obtener pregunta activa (evita responder preguntas inactivas) ──
+    pregunta = get_object_or_404(PreguntaSAQ, pk=pregunta_id, activo=True)
+
+    # ── Serializar listas (checkbox_multi) ───────────────────────
     if isinstance(valor, list):
         valor = json.dumps(valor)
+
+    # ── Validar longitud de respuesta de texto libre ─────────────
+    if isinstance(valor, str) and len(valor) > MAX_CHARS_RESPUESTA:
+        return JsonResponse(
+            {'error': f'La respuesta no puede superar {MAX_CHARS_RESPUESTA} caracteres.'},
+            status=400
+        )
 
     RespuestaPreTest.objects.update_or_create(
         pretest=pretest,
@@ -303,11 +378,12 @@ def pretest_guardar_respuesta(request, pk):
     respondidas = pretest.respuestas.count()
 
     return JsonResponse({
-        'success':    True,
-        'total':      total,
+        'success':     True,
+        'total':       total,
         'respondidas': respondidas,
-        'porcentaje': round(respondidas / total * 100) if total else 0,
+        'porcentaje':  round(respondidas / total * 100) if total else 0,
     })
+
 
 # ════════════════════════════════════════════════════════════════
 # PRETEST — ELIMINAR
@@ -326,14 +402,15 @@ def pretest_eliminar(request, pk):
 
     return render(request, 'saq/pretest_confirmar_eliminar.html', {'pretest': pretest})
 
+
 # ════════════════════════════════════════════════════════════════
 # PRETEST — RESULTADOS
 # ════════════════════════════════════════════════════════════════
 
 @login_required
 def pretest_resultados(request, pk):
-    pretest  = get_object_or_404(PreTest, pk=pk)
-    conteos  = pretest.calcular_resultado()
+    pretest = get_object_or_404(PreTest, pk=pk)
+    conteos = pretest.calcular_resultado()
 
     total_preguntas   = PreguntaSAQ.objects.filter(activo=True).count()
     total_respondidas = pretest.respuestas.count()

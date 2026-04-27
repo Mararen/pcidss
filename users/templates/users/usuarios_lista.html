@@ -20,7 +20,11 @@
         {% endif %}
 
         <div class="page-header-logo-min">
-            <img src="{% static 'users/img/logo.png' %}">
+            {% if config_global and config_global.logo %}
+    <img src="{{ config_global.logo.url }}">
+{% else %}
+    <img src="{% static 'users/img/logo.png' %}">
+{% endif %}
         </div>
     </div>
 </div>

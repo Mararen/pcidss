@@ -31,9 +31,33 @@ align-items:center;
 margin-bottom:25px;
 }
 
+.page-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.page-header-logo-min img {
+    height: 48px;
+    width: auto;
+    object-fit: contain;
+}
+
 .page-actions {
 display:flex;
 gap:10px;
+
+}
+
+.actions {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.modern-table td,
+.modern-table th {
+    vertical-align: middle;
 }
 
 .card-grid {

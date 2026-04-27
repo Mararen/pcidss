@@ -23,6 +23,8 @@ urlpatterns = [
     path('configuracion/general/', views.configuracion_general, name='config_general'),
     path('configuracion/seguridad/', views.configuracion_seguridad, name='config_seguridad'),
     path('configuracion/notificaciones/', views.configuracion_notificaciones, name='config_notificaciones'),
+    path("configuracion/notificaciones/<int:pk>/editar/",   views.notificacion_editar,   name="notificacion_editar"),
+    path("configuracion/notificaciones/<int:pk>/eliminar/", views.notificacion_eliminar, name="notificacion_eliminar"),
 
     # USUARIOS
     path('usuarios/', views.UsuarioListView.as_view(), name='usuarios_lista'),

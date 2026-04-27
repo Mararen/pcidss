@@ -18,4 +18,27 @@
     </div>
 </div>
 
+<h3 style="margin: 24px 0 12px;">Alertas del sistema</h3>
+<div style="display: flex; flex-direction: column; gap: 10px;">
+    {% for n in notificaciones %}
+    <div class="alert alert--{{ n.estilo }}" style="padding: 12px 16px; border-radius: 8px; display: flex; gap: 10px; align-items: center;">
+        {% if n.estilo == "info" %}
+            <i data-feather="info"></i>
+        {% elif n.estilo == "warning" %}
+            <i data-feather="alert-triangle"></i>
+        {% elif n.estilo == "danger" %}
+            <i data-feather="alert-circle"></i>
+        {% elif n.estilo == "success" %}
+            <i data-feather="check-circle"></i>
+        {% endif %}
+        <span>
+            <strong>{{ n.get_tipo_display }}</strong> — 
+            {{ n.dias_antes }} días de antelación vía {{ n.get_canal_display }}
+        </span>
+    </div>
+    {% empty %}
+    <p style="color: var(--text-muted);">No hay notificaciones configuradas para previsualizar.</p>
+    {% endfor %}
+</div>
+
 {% endblock %}

@@ -3,15 +3,19 @@
     gap:10px;
 }
 
-.btn-icon{
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    width:28px;
-    height:28px;
-    border-radius:6px;
-    color:var(--text-muted);
-    transition:all 0.2s ease;
+.btn-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    color: var(--text-muted);
+    transition: all 0.2s ease;
+    border: none;
+    background: none;
+    cursor: pointer;      
+    text-decoration: none; 
 }
 
 .btn-icon i{

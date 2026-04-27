@@ -8,12 +8,22 @@
 
 <div class="page-header">
   <div class="page-header-text">
-    <h1>Banco de Preguntas SAQ</h1>
+    <h1>Administración SAQ</h1>
     <p>PCI DSS v4.0.1 &nbsp;·&nbsp; {{ conteos.ALL }} preguntas activas</p>
   </div>
-  <a href="{% url 'saq:saq_crear' %}" class="btn-primary">
-    <i data-feather="plus"></i> Nueva pregunta
-  </a>
+
+  <div class="page-header-actions">
+    <a href="{% url 'saq:saq_crear' %}" class="btn-primary">
+      + Nueva pregunta
+    </a>
+    <div class="page-header-logo-min">
+      {% if config_global and config_global.logo %}
+        <img src="{{ config_global.logo.url }}">
+      {% else %}
+        <img src="{% static 'users/img/logo.png' %}">
+      {% endif %}
+    </div>
+  </div>
 </div>
 
 <div class="saq-layout">
@@ -43,7 +53,7 @@
         <input type="hidden" name="tipo" value="{{ tipo_filtro }}">
       {% endif %}
       <input type="text" name="buscar" value="{{ buscar }}"
-             placeholder="Buscar en texto de pregunta…" class="form-input search-input">
+             placeholder="Buscar pregunta…" class="form-input search-input">
       <button type="submit" class="btn-secondary">
         <i data-feather="search"></i> Buscar
       </button>

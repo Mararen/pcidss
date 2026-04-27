@@ -1,83 +1,163 @@
 {% extends 'users/base.html' %}
 {% load static %}
 
-{% extends 'users/base.html' %}
-
 {% block content %}
-<h1>{{ ticket.titulo }}</h1>
-
-<p>{{ ticket.descripcion }}</p>
-<p><strong>Estado:</strong> {{ ticket.estado }}</p>
 
 <div class="page-header">
-    <h1>Ticket #{{ ticket.id }}</h1>
+    <div class="page-header-text">
+        <h1>Ticket #{{ ticket.id }}</h1>
+        <p>{{ ticket.get_estado_display }} &middot; {{ ticket.fecha_creacion|date:"d/m/Y H:i" }}</p>
+    </div>
+    <div class="page-actions">
+        <a href="{% url 'helpdesk:ticket_lista' %}" class="btn-secondary">
+            <i data-feather="arrow-left"></i> Volver
+        </a>
+    </div>
 </div>
 
-<div class="ticket-detail">
+<div class="ticket-layout">
 
-    <!-- IZQUIERDA -->
-    <div>
+    {# ────────── COLUMNA PRINCIPAL ────────── #}
+    <div class="ticket-main">
 
+        {# Descripción #}
         <div class="card">
             <div class="card-header">
                 <h3>{{ ticket.titulo }}</h3>
             </div>
-
-            <p>{{ ticket.descripcion }}</p>
+            <p class="ticket-desc">{{ ticket.descripcion }}</p>
         </div>
 
-        <div class="ticket-comments">
-            <h3>Comentarios</h3>
-
-            {% for c in comentarios %}
-            <div class="comment">
-                <strong>{{ c.usuario.username }}</strong>
-                <small>{{ c.fecha }}</small>
-
-                <p>{{ c.comentario }}</p>
-            </div>
-            {% endfor %}
-        </div>
-
-        <!-- FORM -->
+        {# Hilo de comentarios #}
         <div class="card">
+            <div class="card-header">
+                <h3>Comentarios</h3>
+            </div>
+
+            <div class="comments-list">
+                {% for c in comentarios %}
+                <div class="comment {% if c.interno %}comment-interno{% endif %}">
+                    <div class="comment-avatar">{{ c.usuario.username|slice:":2" }}</div>
+                    <div class="comment-body">
+                        <div class="comment-header">
+                            <span class="comment-author">
+                                {{ c.usuario.get_full_name|default:c.usuario.username }}
+                            </span>
+                            <span class="comment-date">{{ c.fecha|date:"d/m/Y H:i" }}</span>
+                            {% if c.interno %}
+                            <span class="badge badge-muted badge-sm">Nota interna</span>
+                            {% endif %}
+                        </div>
+                        <div class="comment-text">{{ c.comentario }}</div>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="comment-no-comments">
+                    <i data-feather="message-circle"></i>
+                    <p>Aún no hay comentarios en este ticket.</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        {# Agregar comentario libre #}
+        <div class="card comment-form">
+            <div class="card-header">
+                <h3>Agregar comentario</h3>
+            </div>
             <form method="post" action="{% url 'helpdesk:agregar_comentario' ticket.id %}">
                 {% csrf_token %}
-
-                <textarea name="comentario" required></textarea>
-
+                <div class="form-group">
+                    <label for="comentario">Mensaje</label>
+                    <textarea id="comentario" name="comentario"
+                              placeholder="Escribe tu comentario..." required></textarea>
+                </div>
                 <div class="form-actions">
-                    <button class="btn-primary">Comentar</button>
+                    <button type="submit" class="btn-primary">
+                        <i data-feather="send"></i> Comentar
+                    </button>
                 </div>
             </form>
         </div>
 
     </div>
 
-    <!-- DERECHA -->
+    {# ────────── SIDEBAR ────────── #}
     <div class="ticket-sidebar">
 
         <div class="card">
+            <p class="sidebar-section-title">Detalles</p>
+
             <div class="detail-row">
                 <span class="label">Estado</span>
                 <span class="badge badge-estado-{{ ticket.estado }}">
                     {{ ticket.get_estado_display }}
                 </span>
             </div>
-
             <div class="detail-row">
                 <span class="label">Prioridad</span>
                 <span class="badge badge-priority-{{ ticket.prioridad }}">
                     {{ ticket.get_prioridad_display }}
                 </span>
             </div>
-
             <div class="detail-row">
-                <span class="label">Usuario</span>
-                <span class="value">{{ ticket.usuario }}</span>
+                <span class="label">Entidad</span>
+                <span class="value">{{ ticket.entidad.nombre_empresa }}</span>
             </div>
-
+            <div class="detail-row">
+                <span class="label">Categoría</span>
+                <span class="value">{{ ticket.categoria|default:"—" }}</span>
+            </div>
+            <div class="detail-row">
+                <span class="label">Creado por</span>
+                <span class="value">{{ ticket.usuario.get_full_name|default:ticket.usuario.username }}</span>
+            </div>
+            <div class="detail-row">
+                <span class="label">Asignado a</span>
+                <span class="value">{{ ticket.asignado_a|default:"Sin asignar" }}</span>
+            </div>
+            <div class="detail-row" style="border-bottom:none;">
+                <span class="label">Actualizado</span>
+                <span class="value" style="font-size:12px;">
+                    {{ ticket.fecha_actualizacion|date:"d/m/Y H:i" }}
+                </span>
+            </div>
         </div>
+
+        {% if es_helpdesk %}
+        <div class="card">
+            <p class="sidebar-section-title">Gestión de estado</p>
+
+            <form method="post" action="{% url 'helpdesk:cambiar_estado' ticket.id %}">
+                {% csrf_token %}
+
+                <div class="form-group" style="margin-bottom:12px;">
+                    <label for="select-estado">Nuevo estado</label>
+                    <select id="select-estado" name="estado">
+                        {% for valor, etiqueta in estados %}
+                        <option value="{{ valor }}" {% if ticket.estado == valor %}selected{% endif %}>
+                            {{ etiqueta }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="form-group" style="margin-bottom:12px;">
+                    <label for="comentario-estado">
+                        Comentario
+                        <span style="color:var(--text-muted);font-weight:400;">(visible para el usuario)</span>
+                    </label>
+                    <textarea id="comentario-estado" name="comentario"
+                              placeholder="Explica brevemente el cambio de estado..."
+                              style="min-height:80px;"></textarea>
+                </div>
+
+                <button type="submit" class="btn-primary" style="width:100%;">
+                    <i data-feather="refresh-cw"></i> Actualizar estado
+                </button>
+            </form>
+        </div>
+        {% endif %}
 
     </div>
 

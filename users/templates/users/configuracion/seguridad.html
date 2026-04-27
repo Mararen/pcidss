@@ -5,60 +5,123 @@
 <form id="formSeguridad">
     {% csrf_token %}
 
-    <label>Longitud mínima</label>
-    <input type="number" name="longitud" value="{{ politica.longitud_minima }}" required>
+    <div class="form-grid">
 
-    <label>Días de vigencia</label>
-    <input type="number" name="dias" value="{{ politica.dias_vigencia }}" required>
+        <div class="form-group">
+            <label for="longitud">Longitud mínima de contraseña</label>
+            <input type="number" id="longitud" name="longitud"
+                   value="{{ politica.longitud_minima }}" min="6" max="32" required>
+        </div>
 
-    <label>Intentos fallidos</label>
-    <input type="number" name="intentos" value="{{ politica.intentos_fallidos }}" required>
+        <div class="form-group">
+            <label for="dias">Días de vigencia de contraseña</label>
+            <input type="number" id="dias" name="dias"
+                   value="{{ politica.dias_vigencia }}" min="1" required>
+        </div>
 
-    <label>
-        <input type="checkbox" name="numeros" {% if politica.requiere_numeros %}checked{% endif %}>
-        Requiere números
-    </label>
+        <div class="form-group">
+            <label for="intentos">Intentos fallidos antes de bloqueo</label>
+            <input type="number" id="intentos" name="intentos"
+                   value="{{ politica.intentos_fallidos }}" min="1" max="20" required>
+        </div>
 
-    <label>
-        <input type="checkbox" name="mayusculas" {% if politica.requiere_mayusculas %}checked{% endif %}>
-        Mayúsculas
-    </label>
+    </div>
 
-    <label>
-        <input type="checkbox" name="simbolos" {% if politica.requiere_simbolos %}checked{% endif %}>
-        Símbolos
-    </label>
+    {# ── Requisitos de contraseña ── #}
+    <p style="font-size:13px; color:var(--text-muted); font-weight:500; margin-bottom:10px;">
+        Requisitos de contraseña
+    </p>
 
-    <button type="button" class="btn-save" onclick="abrirModal()">
-    Guardar
-</button>
+    <div style="display:flex; flex-direction:column; gap:10px; margin-bottom:20px;">
 
+        <label style="display:flex; align-items:center; gap:10px; font-size:13.5px; cursor:pointer;">
+            <input type="checkbox" name="numeros"
+                   {% if politica.requiere_numeros %}checked{% endif %}
+                   style="width:16px; height:16px; accent-color:var(--primary);">
+            Requiere números
+        </label>
+
+        <label style="display:flex; align-items:center; gap:10px; font-size:13.5px; cursor:pointer;">
+            <input type="checkbox" name="mayusculas"
+                   {% if politica.requiere_mayusculas %}checked{% endif %}
+                   style="width:16px; height:16px; accent-color:var(--primary);">
+            Requiere mayúsculas
+        </label>
+
+        <label style="display:flex; align-items:center; gap:10px; font-size:13.5px; cursor:pointer;">
+            <input type="checkbox" name="simbolos"
+                   {% if politica.requiere_simbolos %}checked{% endif %}
+                   style="width:16px; height:16px; accent-color:var(--primary);">
+            Requiere símbolos especiales
+        </label>
+
+    </div>
+
+    <div class="form-actions">
+        <button type="button" class="btn-save" onclick="abrirModal()">
+            Guardar política
+        </button>
+    </div>
+
+</form>
+
+
+{# ── Modal de confirmación — estructura que espera el CSS ── #}
 <div id="modal" style="display:none;">
-    <p>¿Confirmar cambios?</p>
-    <button onclick="guardar()">Sí</button>
+    <div>
+        <p style="font-size:15px; font-weight:600; margin-bottom:8px;">¿Confirmar cambios?</p>
+        <p style="font-size:13px; color:var(--text-muted); margin-bottom:16px;">
+            Los nuevos requisitos se aplicarán a partir del próximo inicio de sesión.
+        </p>
+        <div style="display:flex; gap:10px; justify-content:center;">
+            <button class="btn-secondary" onclick="cerrarModal()">Cancelar</button>
+            <button class="btn-save" onclick="guardar()">Sí, guardar</button>
+        </div>
+    </div>
 </div>
 
 {% endblock %}
 
+
 {% block extra_js %}
 <script>
 function abrirModal() {
-    document.getElementById("modal").style.display = "block";
+    document.getElementById('modal').style.display = 'flex';
 }
 
-function guardar() {
-    const form = document.getElementById("formSeguridad");
+function cerrarModal() {
+    document.getElementById('modal').style.display = 'none';
+}
 
-    fetch("", {
-        method: "POST",
+// Cerrar si se hace click en el fondo
+document.getElementById('modal').addEventListener('click', function(e) {
+    if (e.target === this) cerrarModal();
+});
+
+function guardar() {
+    const form = document.getElementById('formSeguridad');
+
+    fetch('', {
+        method: 'POST',
         body: new FormData(form),
-        headers: {
-            "X-CSRFToken": document.querySelector('[name=csrfmiddlewaretoken]').value
-        }
+        headers: { 'X-CSRFToken': form.querySelector('[name=csrfmiddlewaretoken]').value }
     })
     .then(r => r.json())
     .then(data => {
-        alert(data.success ? "Guardado correctamente" : data.error);
+        cerrarModal();
+        if (data.success) {
+            // Mostrar feedback inline en lugar de alert()
+            const msg = document.createElement('div');
+            msg.textContent = '✓ Política de seguridad actualizada.';
+            msg.style.cssText = `
+                margin-top:12px; padding:10px 16px; border-radius:6px;
+                background:var(--success-bg); color:var(--success); font-size:13.5px;
+            `;
+            form.after(msg);
+            setTimeout(() => msg.remove(), 3000);
+        } else {
+            alert(data.error || 'Error al guardar');
+        }
     });
 }
 </script>

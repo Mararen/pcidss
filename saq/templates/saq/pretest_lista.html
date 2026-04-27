@@ -6,13 +6,23 @@
 {% block content %}
 
 <div class="page-header">
-  <div class="page-header-text">
-    <h1>PreTests</h1>
-    <p>Cuestionarios de orientación SAQ PCI DSS v4.0.1</p>
-  </div>
-  <a href="{% url 'saq:pretest_nuevo' %}" class="btn-primary">
-    <i data-feather="plus"></i> Nuevo PreTest
-  </a>
+    <div class="page-header-text">
+        <h1>PreTests</h1>
+        <p>Cuestionarios de orientación SAQ PCI DSS v4.0.1</p>
+    </div>
+
+    <div class="page-header-actions">
+        <a href="{% url 'saq:pretest_nuevo' %}" class="btn-primary">
+            + Nuevo PreTest
+        </a>
+        <div class="page-header-logo-min">
+            {% if config_global and config_global.logo %}
+                <img src="{{ config_global.logo.url }}">
+            {% else %}
+                <img src="{% static 'users/img/logo.png' %}">
+            {% endif %}
+        </div>
+    </div>
 </div>
 
 {# ── Filtro por entidad ───────────────────────────────────────── #}

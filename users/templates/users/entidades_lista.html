@@ -16,7 +16,11 @@
             + Nueva Entidad
         </a>
         <div class="page-header-logo-min">
-            <img src="{% static 'users/img/logo.png' %}">
+            {% if config_global and config_global.logo %}
+    <img src="{{ config_global.logo.url }}">
+{% else %}
+    <img src="{% static 'users/img/logo.png' %}">
+{% endif %}
         </div>
     </div>
 </div>
@@ -33,15 +37,15 @@
 
                 <thead>
                     <tr>
-                        <td>Empresa</td>
-                        <td>DBA</td>
-                        <td>Email</td>
-                        <td>Contacto</td>
-                        <td>Estado</td>
-                        <td>Creado por</td>
-                        <td>Creación</td>
-                        <td>Última modificación</td>
-                        <td>Acciones</td>
+                        <th>Empresa</th>
+                        <th>DBA</th>
+                        <th>Email</th>
+                        <th>Contacto</th>
+                        <th>Estado</th>
+                        <th>Creado por</th>
+                        <th>Creación</th>
+                        <th>Última modificación</th>
+                        <th>Acciones</th>
                     </tr>
                 </thead>
 
@@ -126,11 +130,6 @@
     </main>
 
 </div>
-
-<script src="https://unpkg.com/feather-icons/dist/feather.min.js"></script>
-<script>
-    feather.replace({'stroke-width': 2});
-</script>
 
 </body>
 </html>

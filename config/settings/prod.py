@@ -15,7 +15,11 @@ SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
 SECURE_SSL_REDIRECT = True
 
+SESSION_COOKIE_HTTPONLY = True
 SESSION_COOKIE_SECURE = True
+SESSION_COOKIE_AGE = 900          # 15 minutos
+SESSION_SAVE_EVERY_REQUEST = True  # Reinicia el timer en cada request
+
 CSRF_COOKIE_SECURE = True
 CSRF_TRUSTED_ORIGINS = ['https://pcicertpro.twilightparadox.com']
 

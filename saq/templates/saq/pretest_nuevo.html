@@ -11,7 +11,7 @@
     <p>Selecciona la entidad para iniciar el cuestionario de orientación SAQ.</p>
   </div>
   <a href="{% url 'saq:pretest_lista' %}" class="btn-secondary">
-    <i data-feather="arrow-left"></i> Volver
+    ↶ Volver
   </a>
 </div>
 
@@ -38,7 +38,7 @@
     <div class="form-actions">
       <a href="{% url 'saq:pretest_lista' %}" class="btn-secondary">Cancelar</a>
       <button type="submit" class="btn-primary" {% if not entidades %}disabled{% endif %}>
-        <i data-feather="play"></i> Iniciar PreTest
+        ▶ Iniciar PreTest
       </button>
     </div>
 

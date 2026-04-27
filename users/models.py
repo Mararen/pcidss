@@ -2,7 +2,9 @@ from django.utils import timezone
 from django.contrib.auth.models import User
 from django.db import models
 
-# ─── CONFIGURACIÓN GENERAL ───────────────────────────────
+# ─────────────────────────────────────────────
+# CONFIGURACIÓN GENERAL
+# ─────────────────────────────────────────────
 
 class ConfiguracionGeneral(models.Model):
     nombre_sistema = models.CharField(max_length=150)
@@ -16,32 +18,52 @@ class ConfiguracionGeneral(models.Model):
         return "Configuración General"
 
 
-# ─── SEGURIDAD ───────────────────────────────────────────
+# ─────────────────────────────────────────────
+# SEGURIDAD
+# ─────────────────────────────────────────────
 
 class PoliticaSeguridad(models.Model):
-    longitud_minima = models.IntegerField(default=8)
-    requiere_numeros = models.BooleanField(default=True)
+    longitud_minima     = models.IntegerField(default=8)
+    requiere_numeros    = models.BooleanField(default=True)
     requiere_mayusculas = models.BooleanField(default=True)
-    requiere_simbolos = models.BooleanField(default=True)
-    dias_vigencia = models.IntegerField()
-    intentos_fallidos = models.IntegerField()
-    actualizado_en = models.DateTimeField(auto_now=True)
+    requiere_simbolos   = models.BooleanField(default=True)
+    dias_vigencia       = models.IntegerField(default=90)   
+    intentos_fallidos   = models.IntegerField(default=5)   
+    actualizado_en      = models.DateTimeField(auto_now=True)
 
 
-# ─── NOTIFICACIONES ──────────────────────────────────────
+# ─────────────────────────────────────────────
+# NOTIFICACIONES
+# ─────────────────────────────────────────────
 
 class NotificacionConfig(models.Model):
-    TIPOS = [("alerta", "Alerta"), ("recordatorio", "Recordatorio")]
-    CANALES = [("correo", "Correo"), ("sistema", "Sistema")]
+    TIPOS = [
+        ("vencimiento_certificacion", "Vencimiento de certificación"),
+        ("vencimiento_contrato",      "Vencimiento de contrato"),
+        ("pretest_pendiente",         "PreTest pendiente"),
+        ("renovacion_proxima",        "Renovación próxima"),
+    ]
+    CANALES = [
+        ("correo",  "Correo"),
+        ("sistema", "Sistema"),
+    ]
+    ESTILOS = [
+        ("info",    "Información"),
+        ("warning", "Advertencia"),
+        ("danger",  "Urgente"),
+        ("success", "Éxito"),
+    ]
 
-    tipo = models.CharField(max_length=20, choices=TIPOS, unique=True)
+    tipo      = models.CharField(max_length=40, choices=TIPOS, unique=True)
     dias_antes = models.IntegerField()
-    canal = models.CharField(max_length=20, choices=CANALES)
-    activo = models.BooleanField(default=True)
+    canal     = models.CharField(max_length=20, choices=CANALES)
+    estilo    = models.CharField(max_length=20, choices=ESTILOS, default="info")
+    activo    = models.BooleanField(default=True)
     creado_en = models.DateTimeField(auto_now_add=True)
 
-
-# ─── PERMISOS ────────────────────────────────────────────
+# ─────────────────────────────────────────────
+# PERMISOS
+# ─────────────────────────────────────────────
 
 class PermisosSistema(models.Model):
     class Meta:

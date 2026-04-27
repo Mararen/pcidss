@@ -5,10 +5,12 @@
 <form id="formNotif">
     {% csrf_token %}
 
-    <label>Tipo</label>
+    <label>Evento</label>
     <select name="tipo">
-        <option value="alerta">Alerta</option>
-        <option value="recordatorio">Recordatorio</option>
+        <option value="vencimiento_certificacion">Vencimiento de certificación</option>
+        <option value="vencimiento_contrato">Vencimiento de contrato</option>
+        <option value="pretest_pendiente">PreTest pendiente</option>
+        <option value="renovacion_proxima">Renovación próxima</option>
     </select>
 
     <label>Días de antelación</label>
@@ -20,58 +22,160 @@
         <option value="sistema">Sistema</option>
     </select>
 
-    <button type="button" class="btn-inline" onclick="guardarNotif()">
-    Agregar
-</button>
+    <label>Estilo en dashboard</label>
+    <select name="estilo">
+        <option value="info">Información</option>
+        <option value="warning">Advertencia</option>
+        <option value="danger">Urgente</option>
+        <option value="success">Éxito</option>
+    </select>
+
+    <button type="button" class="btn-inline" onclick="guardarNotif()">Agregar</button>
 </form>
 
 <table>
     <thead>
         <tr>
-            <th>Tipo</th>
+            <th>Evento</th>
             <th>Días</th>
             <th>Canal</th>
+            <th>Estilo</th>
             <th>Estado</th>
+            <th>Acciones</th>
         </tr>
     </thead>
     <tbody>
         {% for n in notificaciones %}
         <tr>
-            <td>{{ n.tipo }}</td>
+            <td>{{ n.get_tipo_display }}</td>
             <td>{{ n.dias_antes }}</td>
-            <td>{{ n.canal }}</td>
+            <td>{{ n.get_canal_display }}</td>
+            <td><span class="badge badge--{{ n.estilo }}">{{ n.get_estilo_display }}</span></td>
             <td>{{ n.activo|yesno:"Activo,Inactivo" }}</td>
+            <td>
+                <button type="button" class="btn-icon" onclick="abrirEditar({{ n.pk }}, '{{ n.tipo }}', {{ n.dias_antes }}, '{{ n.canal }}', '{{ n.estilo }}')">
+                    <i data-feather="edit-2"></i>
+                </button>
+                <button type="button" class="btn-icon danger" onclick="eliminar({{ n.pk }})">
+                    <i data-feather="trash-2"></i>
+                </button>
+            </td>
         </tr>
         {% empty %}
         <tr>
-            <td colspan="4">No hay notificaciones configuradas</td>
+            <td colspan="6">No hay notificaciones configuradas</td>
         </tr>
         {% endfor %}
     </tbody>
 </table>
 
+{# Modal editar #}
+<div id="modalEditar" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.4); z-index:999; display:none; align-items:center; justify-content:center;">
+    <div style="background:white; border-radius:10px; padding:28px; min-width:380px;">
+        <h3 style="margin-bottom:16px;">Editar notificación</h3>
+        <form id="formEditar">
+            {% csrf_token %}
+
+            <label>Evento</label>
+            <select id="edit-tipo" name="tipo">
+                <option value="vencimiento_certificacion">Vencimiento de certificación</option>
+                <option value="vencimiento_contrato">Vencimiento de contrato</option>
+                <option value="pretest_pendiente">PreTest pendiente</option>
+                <option value="renovacion_proxima">Renovación próxima</option>
+            </select>
+
+            <label style="margin-top:12px;">Días de antelación</label>
+            <input type="number" id="edit-dias" name="dias" required>
+
+            <label style="margin-top:12px;">Canal</label>
+            <select id="edit-canal" name="canal">
+                <option value="correo">Correo</option>
+                <option value="sistema">Sistema</option>
+            </select>
+
+            <label style="margin-top:12px;">Estilo en dashboard</label>
+            <select id="edit-estilo" name="estilo">
+                <option value="info">Información</option>
+                <option value="warning">Advertencia</option>
+                <option value="danger">Urgente</option>
+                <option value="success">Éxito</option>
+            </select>
+
+            <div style="display:flex; gap:10px; margin-top:20px;">
+                <button type="button" class="btn-primary" onclick="guardarEditar()">Guardar</button>
+                <button type="button" class="btn-secondary" onclick="cerrarModal()">Cancelar</button>
+            </div>
+        </form>
+    </div>
+</div>
+
 {% endblock %}
 
 {% block extra_js %}
 <script>
+let editPk = null;
+
 function guardarNotif() {
     const form = document.getElementById("formNotif");
-
     fetch("", {
         method: "POST",
         body: new FormData(form),
-        headers: {
-            "X-CSRFToken": document.querySelector('[name=csrfmiddlewaretoken]').value
-        }
+        headers: { "X-CSRFToken": document.querySelector('[name=csrfmiddlewaretoken]').value }
     })
     .then(r => r.json())
     .then(data => {
-        if (data.success) {
-            location.reload();
-        } else {
-            alert(data.error);
-        }
+        if (data.success) location.reload();
+        else alert(data.error);
     });
 }
+
+function abrirEditar(pk, tipo, dias, canal, estilo) {
+    editPk = pk;
+    document.getElementById("edit-tipo").value   = tipo;
+    document.getElementById("edit-dias").value   = dias;
+    document.getElementById("edit-canal").value  = canal;
+    document.getElementById("edit-estilo").value = estilo;
+    document.getElementById("modalEditar").style.display = "flex";
+}
+
+function cerrarModal() {
+    document.getElementById("modalEditar").style.display = "none";
+}
+
+function guardarEditar() {
+    const form = document.getElementById("formEditar");
+    fetch(`/configuracion/notificaciones/${editPk}/editar/`, {
+        method: "POST",
+        body: new FormData(form),
+        headers: { "X-CSRFToken": document.querySelector('[name=csrfmiddlewaretoken]').value }
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) location.reload();
+        else alert(data.error);
+    });
+}
+
+function eliminar(pk) {
+    if (!confirm("¿Eliminar esta notificación?")) return;
+
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+    fetch(`/configuracion/notificaciones/${pk}/eliminar/`, {
+        method: "POST",
+        headers: {
+            "X-CSRFToken": csrfToken,
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify({}),
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) location.reload();
+        else alert(data.error);
+    })
+    .catch(err => alert("Error al eliminar: " + err));
+}
+
 </script>
 {% endblock %}

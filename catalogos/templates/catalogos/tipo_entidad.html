@@ -1,0 +1,189 @@
+{% extends 'catalogos/base.html' %}
+
+{% block cat_content %}
+
+<div id="toast" class="toast" style="display:none;">
+    ✓ Operación realizada correctamente
+</div>
+
+<form id="formCat">
+    {% csrf_token %}
+    <input type="hidden" id="edit-pk" name="pk" value="">
+
+    <label>Nombre <span style="color:var(--danger)">*</span></label>
+    <input type="text" id="campo-nombre" name="nombre" required>
+
+    <label>Descripción</label>
+    <textarea id="campo-descripcion" name="descripcion" rows="2"></textarea>
+
+    <div id="form-error" style="color:var(--danger); font-size:13px; margin-top:6px; display:none;"></div>
+
+    <div class="form-actions">
+        <button type="button" class="btn-save" onclick="guardar()">Guardar</button>
+        <button type="button" class="btn-reset" onclick="limpiar()">Cancelar</button>
+    </div>
+</form>
+
+<table class="modern-table">
+    <thead>
+        <tr>
+            <th>Nombre</th>
+            <th>Descripción</th>
+            <th>Estado</th>
+            <th>Acciones</th>
+        </tr>
+    </thead>
+
+    <tbody>
+        {% for item in items %}
+        <tr>
+            <td>{{ item.nombre }}</td>
+
+            <td>{{ item.descripcion|default:"—" }}</td>
+
+            <td>
+                <span class="badge badge--{{ item.activo|yesno:'success,danger' }}">
+                    {{ item.activo|yesno:"Activo,Inactivo" }}
+                </span>
+            </td>
+
+            <td>
+                <div class="actions">
+
+                    <!-- VER (opcional, pero recomendado para consistencia con usuarios) -->
+                    {# puedes quitarlo si no aplica #}
+
+                    <!-- EDITAR -->
+                    <button type="button"
+                            class="btn-icon"
+                            title="Editar"
+                            onclick="editar({{ item.pk }}, '{{ item.nombre|escapejs }}', '{{ item.descripcion|default:''|escapejs }}')">
+                        <i data-feather="edit"></i>
+                    </button>
+
+                    <!-- TOGGLE -->
+                    <button type="button"
+                            class="btn-icon"
+                            title="{% if item.activo %}Desactivar{% else %}Activar{% endif %}"
+                            onclick="toggle({{ item.pk }})">
+                        {% if item.activo %}
+                            <i data-feather="toggle-right"></i>
+                        {% else %}
+                            <i data-feather="toggle-left"></i>
+                        {% endif %}
+                    </button>
+
+                    <!-- ELIMINAR -->
+                    <button type="button"
+                            class="btn-icon danger"
+                            title="Eliminar"
+                            onclick="eliminar({{ item.pk }}, '{{ item.nombre|escapejs }}')">
+                        <i data-feather="trash-2"></i>
+                    </button>
+
+                </div>
+            </td>
+        </tr>
+
+        {% empty %}
+        <tr>
+            <td colspan="4">No hay registros.</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const csrf = () => document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+function mostrarToast() {
+    const t = document.getElementById("toast");
+    t.style.display = "block";
+    setTimeout(() => t.style.display = "none", 3000);
+}
+
+function mostrarError(msg) {
+    const el = document.getElementById("form-error");
+    el.textContent = msg;
+    el.style.display = "block";
+}
+
+function ocultarError() {
+    document.getElementById("form-error").style.display = "none";
+}
+
+function guardar() {
+    ocultarError();
+    const pk = document.getElementById("edit-pk").value;
+
+    if (pk && !confirm("¿Confirmar los cambios en este registro?")) return;
+
+    fetch("", {
+        method: "POST",
+        body: new FormData(document.getElementById("formCat")),
+        headers: { "X-CSRFToken": csrf() }
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            mostrarToast();
+            setTimeout(() => location.reload(), 800);
+        } else {
+            mostrarError(data.error);
+        }
+    });
+}
+
+function editar(pk, nombre, descripcion) {
+    document.getElementById("edit-pk").value = pk;
+    document.getElementById("campo-nombre").value = nombre;
+    document.getElementById("campo-descripcion").value = descripcion;
+
+    document.getElementById("campo-nombre").focus();
+    ocultarError();
+}
+
+function limpiar() {
+    document.getElementById("edit-pk").value = "";
+    document.getElementById("campo-nombre").value = "";
+    document.getElementById("campo-descripcion").value = "";
+    ocultarError();
+}
+
+function toggle(pk) {
+    fetch(`${pk}/toggle/`, {
+        method: "POST",
+        headers: { "X-CSRFToken": csrf() }
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) location.reload();
+    });
+}
+
+function eliminar(pk, nombre) {
+    if (!confirm(`¿Eliminar "${nombre}"? Esta acción no se puede deshacer.`)) return;
+
+    fetch(`${pk}/eliminar/`, {
+        method: "POST",
+        headers: {
+            "X-CSRFToken": csrf(),
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({})
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            mostrarToast();
+            setTimeout(() => location.reload(), 800);
+        } else {
+            alert(data.error);
+        }
+    });
+}
+</script>
+{% endblock %}

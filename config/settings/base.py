@@ -29,6 +29,7 @@ INSTALLED_APPS = [
 
     'users',
     'saq',
+    'catalogos',
     'helpdesk',
 ]
 
@@ -66,6 +67,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                "users.context_processors.config_global", 
                 'saq.context_processors.saq_urls',
             ],
         },
@@ -93,6 +95,12 @@ USE_TZ = True
 # STATIC FILES
 # =========================
 STATIC_URL = '/static/'
+
+# =========================
+# MEDIA FILES
+# =========================
+MEDIA_URL  = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'
 
 # =========================
 # DEFAULT PK

@@ -16,18 +16,18 @@
 
         <header class="topbar">
             <nav class="topbar-nav">
-                <a href="#">Catálogos</a>
+                <a href="{% url 'catalogos:home' %}">Catálogos</a>
                 <a href="{% url 'config_general' %}">Configuración</a>
                 <a href="{% url 'helpdesk:ticket_lista' %}">Ayuda</a>
             </nav>
 
-            <div class="topbar-right">
+            <!-- <div class="topbar-right">
                 <div class="topbar-search">
                     <i data-feather="search"></i>
                     <input type="text" placeholder="Buscar...">
                 </div>
                 <div class="topbar-lang">Eng ▾</div>
-            </div>
+            </div> -->
         </header>
 
         <section class="content">
@@ -38,7 +38,11 @@
 </div>
 
 <script src="https://unpkg.com/feather-icons/dist/feather.min.js"></script>
-<script>feather.replace({'stroke-width': 2})</script>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        feather.replace({ 'stroke-width': 2 });
+    });
+</script>
 
 {% block extra_js %}{% endblock %}
 

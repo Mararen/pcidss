@@ -20,10 +20,10 @@ from django.db.models import Q, Max
 
 from .models import (
     Entidad,
+    LogAuditoria,
     ConfiguracionGeneral,
     PoliticaSeguridad,
     NotificacionConfig,
-    LogAuditoria,
 )
 
 # ─────────────────────────────────────────────
@@ -94,7 +94,8 @@ def logout_view(request):
 @login_required
 @permission_required('users.ver_dashboard', raise_exception=True)
 def dashboard(request):
-    return render(request, "users/dashboard.html")
+    notificaciones = NotificacionConfig.objects.filter(activo=True)
+    return render(request, "users/dashboard.html", {"notificaciones": notificaciones})
     
 # ─────────────────────────────────────────────
 # PASSWORD
@@ -147,12 +148,17 @@ def forgot_password(request):
 def configuracion_general(request):
     config, _ = ConfiguracionGeneral.objects.get_or_create(id=1)
 
-    if request.method == "POST":
+    if request.method == "POST":                          # ← debe estar dentro de la función
         config.nombre_sistema = request.POST.get("nombre")
-        config.tiempo_sesion = int(request.POST.get("tiempo"))
-        config.idioma = request.POST.get("idioma")
-        config.zona_horaria = request.POST.get("zona")
+        config.tiempo_sesion  = int(request.POST.get("tiempo"))
+        config.idioma         = request.POST.get("idioma")
+        config.zona_horaria   = request.POST.get("zona")
+
+        if "logo" in request.FILES:
+            config.logo = request.FILES["logo"]
+
         config.save()
+        registrar_log(request, "UPDATE", "Configuración", "Actualizó configuración general")
         return JsonResponse({"success": True})
 
     return render(request, "users/configuracion/general.html", {"config": config})
@@ -161,14 +167,96 @@ def configuracion_general(request):
 @login_required
 @permission_required('users.gestionar_configuracion', raise_exception=True)
 def configuracion_seguridad(request):
-    return render(request, "users/configuracion/seguridad.html")
+    politica, _ = PoliticaSeguridad.objects.get_or_create(
+        id=1,
+        defaults={
+            "dias_vigencia":     90,
+            "intentos_fallidos": 5,
+        }
+    )
 
+    if request.method == "POST":
+        # Obtener valores con defaults seguros
+        try:
+            longitud = int(request.POST.get("longitud", 8))
+            dias     = int(request.POST.get("dias", 90))
+            intentos = int(request.POST.get("intentos", 5))
+        except ValueError:
+            return JsonResponse({"error": "Los valores deben ser numéricos."}, status=400)
+
+        # Validación de rangos
+        if not (6 <= longitud <= 32):
+            return JsonResponse({"error": "La longitud debe estar entre 6 y 32 caracteres."}, status=400)
+        if not (1 <= dias <= 365):
+            return JsonResponse({"error": "Los días de vigencia deben estar entre 1 y 365."}, status=400)
+        if not (1 <= intentos <= 10):
+            return JsonResponse({"error": "Los intentos fallidos deben estar entre 1 y 10."}, status=400)
+
+        # Guardar
+        politica.longitud_minima     = longitud
+        politica.dias_vigencia       = dias
+        politica.intentos_fallidos   = intentos
+        politica.requiere_numeros    = "numeros"    in request.POST
+        politica.requiere_mayusculas = "mayusculas" in request.POST
+        politica.requiere_simbolos   = "simbolos"   in request.POST
+        politica.save()
+        registrar_log(request, "UPDATE", "Configuración", "Actualizó política de seguridad")
+        return JsonResponse({"success": True})
+
+    return render(request, "users/configuracion/seguridad.html", {"politica": politica})
 
 @login_required
 @permission_required('users.gestionar_configuracion', raise_exception=True)
 def configuracion_notificaciones(request):
-    return render(request, "users/configuracion/notificaciones.html")
+    if request.method == "POST":
+        tipo   = request.POST.get("tipo")
+        dias   = request.POST.get("dias")
+        canal  = request.POST.get("canal")
+        estilo = request.POST.get("estilo")
 
+        obj, created = NotificacionConfig.objects.update_or_create(
+            tipo=tipo,
+            defaults={"dias_antes": dias, "canal": canal, "estilo": estilo, "activo": True}
+        )
+        registrar_log(request, "CREATE" if created else "UPDATE",
+                      "Configuración", f"Notificación '{tipo}' configurada")
+        return JsonResponse({"success": True})
+
+    notificaciones = NotificacionConfig.objects.all() 
+    return render(request, "users/configuracion/notificaciones.html",
+                  {"notificaciones": notificaciones})
+
+@login_required
+@permission_required('users.gestionar_configuracion', raise_exception=True)
+def notificacion_editar(request, pk):
+    notif = get_object_or_404(NotificacionConfig, pk=pk)
+
+    if request.method == "POST":
+        notif.tipo      = request.POST.get("tipo")
+        notif.dias_antes = int(request.POST.get("dias"))
+        notif.canal     = request.POST.get("canal")
+        notif.estilo    = request.POST.get("estilo")
+        notif.save()
+        registrar_log(request, "UPDATE", "Configuración", f"Notificación '{notif.tipo}' editada")
+        return JsonResponse({"success": True})
+
+    return JsonResponse({
+        "tipo":      notif.tipo,
+        "dias":      notif.dias_antes,
+        "canal":     notif.canal,
+        "estilo":    notif.estilo,
+    })
+
+@login_required
+@permission_required('users.gestionar_configuracion', raise_exception=True)
+def notificacion_eliminar(request, pk):
+    if request.method == "POST":
+        notif = get_object_or_404(NotificacionConfig, pk=pk)
+        notif.delete()
+        registrar_log(request, "DELETE", "Configuración", f"Notificación '{notif.tipo}' eliminada")
+        return JsonResponse({"success": True})
+
+    return JsonResponse({"error": "Método no permitido"}, status=405)
 
 # ─────────────────────────────────────────────
 # USUARIOS
@@ -184,6 +272,24 @@ class UsuarioUpdateForm(forms.ModelForm):
     class Meta:
         model = User
         fields = ["username", "first_name", "last_name", "email", "is_active"]
+
+    def clean_first_name(self):
+        valor = self.cleaned_data.get("first_name", "")
+        if any(c.isdigit() for c in valor):
+            raise forms.ValidationError("El nombre no puede contener números.")
+        return valor.strip()
+
+    def clean_last_name(self):
+        valor = self.cleaned_data.get("last_name", "")
+        if any(c.isdigit() for c in valor):
+            raise forms.ValidationError("El apellido no puede contener números.")
+        return valor.strip()
+
+    def clean_email(self):
+        email = self.cleaned_data.get("email", "")
+        if not email:
+            raise forms.ValidationError("El correo es obligatorio.")
+        return email.lower()
 
 
 class UsuarioListView(PermissionRequiredMixin, ListView):
@@ -280,24 +386,21 @@ class UsuarioUpdateView(PermissionRequiredMixin, UpdateView):
 
         return super().form_valid(form)
 
-
 @login_required
 @permission_required('users.gestionar_usuarios', raise_exception=True)
 def usuario_toggle(request, pk):
+    if request.method != "POST":
+        return redirect("usuarios_lista")
+
     user = get_object_or_404(User, pk=pk)
     user.is_active = not user.is_active
     user.save()
-
     registrar_log(
-        request,
-        "UPDATE",
-        "USUARIOS",
+        request, "UPDATE", "USUARIOS",
         f"Usuario {'activado' if user.is_active else 'desactivado'}: {user.username}",
         target_user=user
     )
-
     return redirect("usuarios_lista")
-
 
 # ─────────────────────────────────────────────
 # ENTIDADES
@@ -307,6 +410,27 @@ class EntidadForm(forms.ModelForm):
     class Meta:
         model = Entidad
         fields = ["usuario", "nombre_empresa", "dba", "email", "sitio_web", "contacto"]
+
+    def clean_nombre_empresa(self):
+        """Nombre de empresa: mínimo 2 caracteres."""
+        valor = self.cleaned_data.get("nombre_empresa", "").strip()
+        if len(valor) < 2:
+            raise forms.ValidationError("El nombre de la empresa debe tener al menos 2 caracteres.")
+        return valor
+
+    def clean_email(self):
+        """Email obligatorio y en minúsculas."""
+        email = self.cleaned_data.get("email", "").strip()
+        if not email:
+            raise forms.ValidationError("El correo electrónico es obligatorio.")
+        return email.lower()
+
+    def clean_contacto(self):
+        """Contacto: solo letras y espacios, sin números."""
+        valor = self.cleaned_data.get("contacto", "").strip()
+        if any(c.isdigit() for c in valor):
+            raise forms.ValidationError("El nombre del contacto no puede contener números.")
+        return valor
 
 
 class EntidadListView(PermissionRequiredMixin, ListView):
@@ -373,7 +497,14 @@ class EntidadUpdateView(PermissionRequiredMixin, UpdateView):
 @login_required
 @permission_required('users.gestionar_entidades', raise_exception=True)
 def entidad_toggle(request, pk):
+    if request.method != "POST":
+        return redirect("entidades_lista")
+
     entidad = get_object_or_404(Entidad, pk=pk)
     entidad.is_active = not entidad.is_active
     entidad.save()
+    registrar_log(
+        request, "UPDATE", "ENTIDADES",
+        f"Entidad {'activada' if entidad.is_active else 'desactivada'}: {entidad.nombre_empresa}"
+    )
     return redirect("entidades_lista")

@@ -2,34 +2,87 @@
 {% load static %}
 
 {% block content %}
-<h1>Nuevo Ticket</h1>
 
-<form method="post">
-    {% csrf_token %}
+<div class="page-header">
+    <div class="page-header-text">
+        <h1>Nuevo Ticket</h1>
+        <p>Describe el problema y te atenderemos a la brevedad.</p>
+    </div>
+    <div class="page-actions">
+        <a href="{% url 'helpdesk:ticket_lista' %}" class="btn-secondary">
+            <i data-feather="arrow-left"></i> Cancelar
+        </a>
+    </div>
+</div>
 
-    <input type="text" name="titulo" placeholder="Título" required>
+<div class="ticket-form-card">
+    <form method="post">
+        {% csrf_token %}
 
-    <textarea name="descripcion" placeholder="Descripción"></textarea>
+        {# ── Título ── #}
+        <div class="form-group" style="margin-bottom: 20px;">
+            <label for="titulo">Título *</label>
+            <input
+                type="text"
+                id="titulo"
+                name="titulo"
+                placeholder="Describe brevemente el problema"
+                required
+            >
+        </div>
 
-    <select name="entidad">
-        {% for e in entidades %}
-        <option value="{{ e.pk }}">{{ e.nombre_empresa }}</option>
-        {% endfor %}
-    </select>
+        {# ── Descripción ── #}
+        <div class="form-group" style="margin-bottom: 20px;">
+            <label for="descripcion">Descripción</label>
+            <textarea
+                id="descripcion"
+                name="descripcion"
+                placeholder="Explica el problema con más detalle: pasos para reproducirlo, mensajes de error, etc."
+            ></textarea>
+        </div>
 
-    <select name="categoria">
-        {% for c in categorias %}
-        <option value="{{ c.pk }}">{{ c.nombre }}</option>
-        {% endfor %}
-    </select>
+        {# ── Fila 3 columnas ── #}
+        <div class="form-grid-3">
+            <div class="form-group">
+                <label for="entidad">Entidad *</label>
+                <select id="entidad" name="entidad" required>
+                    <option value="">— Selecciona —</option>
+                    {% for e in entidades %}
+                    <option value="{{ e.pk }}">{{ e.nombre_empresa }}</option>
+                    {% endfor %}
+                </select>
+            </div>
 
-    <select name="prioridad">
-        <option value="baja">Baja</option>
-        <option value="media">Media</option>
-        <option value="alta">Alta</option>
-    </select>
+            <div class="form-group">
+                <label for="categoria">Categoría</label>
+                <select id="categoria" name="categoria">
+                    <option value="">— Selecciona —</option>
+                    {% for c in categorias %}
+                    <option value="{{ c.pk }}">{{ c.nombre }}</option>
+                    {% endfor %}
+                </select>
+            </div>
 
-    <button type="submit" class="btn-primary">Crear</button>
-</form>
+            <div class="form-group">
+                <label for="prioridad">Prioridad</label>
+                <select id="prioridad" name="prioridad">
+                    <option value="baja">Baja</option>
+                    <option value="media" selected>Media</option>
+                    <option value="alta">Alta</option>
+                    <option value="critica">Crítica</option>
+                </select>
+            </div>
+        </div>
+
+        {# ── Acciones ── #}
+        <div class="form-actions">
+            <a href="{% url 'helpdesk:ticket_lista' %}" class="btn-secondary">Cancelar</a>
+            <button type="submit" class="btn-primary">
+                <i data-feather="send"></i> Crear ticket
+            </button>
+        </div>
+
+    </form>
+</div>
 
 {% endblock %}

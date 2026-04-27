@@ -5,53 +5,78 @@
 <form id="formConfig" enctype="multipart/form-data">
     {% csrf_token %}
 
-    <label>Nombre del sistema</label>
-    <input type="text" name="nombre" value="{{ config.nombre_sistema }}" required>
+    <div class="form-group">
+        <label for="nombre">Nombre del sistema</label>
+        <input type="text" id="nombre" name="nombre"
+               value="{{ config.nombre_sistema }}" required>
+    </div>
 
-    <label>Tiempo de sesión (minutos)</label>
-    <input type="number" name="tiempo" value="{{ config.tiempo_sesion }}" required>
+    <div class="form-group">
+        <label for="tiempo">Tiempo de sesión (minutos)</label>
+        <input type="number" id="tiempo" name="tiempo"
+               value="{{ config.tiempo_sesion }}" min="5" max="480" required>
+    </div>
 
-    <label>Idioma</label>
-    <select name="idioma">
-        <option value="es" {% if config.idioma == 'es' %}selected{% endif %}>Español</option>
-        <option value="en">Inglés</option>
-    </select>
+    <div class="form-group">
+        <label for="idioma">Idioma</label>
+        <select id="idioma" name="idioma">
+            <option value="es" {% if config.idioma == 'es' %}selected{% endif %}>Español</option>
+            <option value="en" {% if config.idioma == 'en' %}selected{% endif %}>Inglés</option>
+        </select>
+    </div>
 
-    <label>Zona horaria</label>
-    <input type="text" name="zona" value="{{ config.zona_horaria }}" required>
+    <div class="form-group">
+        <label for="zona">Zona horaria</label>
+        <input type="text" id="zona" name="zona"
+               value="{{ config.zona_horaria }}"
+               placeholder="Ej: America/Mexico_City" required>
+    </div>
 
-    <label>Logo</label>
-    <input type="file" name="logo" accept=".png,.jpg,.jpeg">
+    <div class="form-group">
+        <label for="logo">Logo del sistema</label>
+        {% if config.logo %}
+        <img src="{{ config.logo.url }}" alt="Logo actual"
+             style="height:48px; display:block; margin-bottom:8px; border-radius:4px;">
+        {% endif %}
+        <input type="file" id="logo" name="logo" accept=".png,.jpg,.jpeg">
+    </div>
 
     <div class="form-actions">
-    <button type="button" class="btn-save" onclick="guardarConfig()">
-        Guardar configuración
-    </button>
-    <button type="reset" class="btn-reset">
-        Restablecer
-    </button>
+        <button type="reset" class="btn-reset">Restablecer</button>
+        <button type="button" class="btn-save" onclick="guardarConfig()">
+            Guardar configuración
+        </button>
+    </div>
+
+</form>
+
+<div id="toast-ok" style="display:none; margin-top:12px;
+     background:var(--success-bg); color:var(--success);
+     padding:10px 16px; border-radius:6px; font-size:13.5px;">
+    ✓ Configuración guardada correctamente.
 </div>
 
 {% endblock %}
 
+
 {% block extra_js %}
 <script>
 function guardarConfig() {
-    const form = document.getElementById("formConfig");
+    const form = document.getElementById('formConfig');
+    const toast = document.getElementById('toast-ok');
 
-    fetch("", {
-        method: "POST",
+    fetch('', {
+        method: 'POST',
         body: new FormData(form),
-        headers: {
-            "X-CSRFToken": document.querySelector('[name=csrfmiddlewaretoken]').value
-        }
+        headers: { 'X-CSRFToken': form.querySelector('[name=csrfmiddlewaretoken]').value }
     })
     .then(r => r.json())
     .then(data => {
         if (data.success) {
-            alert("Configuración guardada correctamente");
+            toast.style.display = 'block';
+            setTimeout(() => toast.style.display = 'none', 3000);
         } else {
-            alert(data.error);
+            alert(data.error || 'Error al guardar');
         }
     });
 }
