@@ -11,6 +11,6 @@ urlpatterns = [
     path('', include('users.urls')),
     path('saq/', include(('saq.urls', 'saq'), namespace='saq')),
     path('catalogos/', include(('catalogos.urls', 'catalogos'), namespace='catalogos')),
-
     path('tickets/', include('helpdesk.urls')),
-] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT) \
+  + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT) 

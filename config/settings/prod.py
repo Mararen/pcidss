@@ -23,6 +23,7 @@ SESSION_SAVE_EVERY_REQUEST = True  # Reinicia el timer en cada request
 CSRF_COOKIE_SECURE = True
 CSRF_TRUSTED_ORIGINS = ['https://pcicertpro.twilightparadox.com']
 
+STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
@@ -34,13 +35,9 @@ DATABASES = {
     'default': dj_database_url.config(
         default=os.environ.get("DATABASE_URL"),
         conn_max_age=600
+        ssl_require=True
     )
 }
-
-STATIC_URL = '/static/'
-STATIC_ROOT = BASE_DIR / 'staticfiles'
-
-STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 RECAPTCHA_PUBLIC_KEY = os.getenv('RECAPTCHA_PUBLIC_KEY')
 RECAPTCHA_PRIVATE_KEY = os.getenv('RECAPTCHA_PRIVATE_KEY')

@@ -3,7 +3,7 @@
 .login-hero {
     position: relative;
     width: 100%;
-    height: 400px;
+    height: 350px; 
     overflow: hidden;
 }
 
@@ -17,10 +17,10 @@
     position: absolute;
     inset: 0;
     display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
+    flex-direction: column-reverse;
     gap: 10px;
+    align-items: center;
+    justify-content: flex-end;
 }
 
 .login-logo {
@@ -45,24 +45,24 @@
 .login-wrapper {
     display: flex;
     justify-content: center;
-    padding: 40px 20px 60px;
+    padding: 20px 20px 20px;
     background: var(--bg-light);
-    margin-top: -60px;
+    margin-top: -100px;
     position: relative;
-    z-index: 1;
+    z-index: 0;
 }
 
 /* ─── CARD ───────────────────────────────────────────── */
 
 .login-card {
     width: 380px;
-    padding: 36px 32px;
+    padding: 28px 32px;
     border-radius: 16px;
     background: white;
     box-shadow: var(--shadow-md);
     display: flex;
     flex-direction: column;
-    gap: 14px;
+    gap: 10px;  
 }
 
 .login-card label {
