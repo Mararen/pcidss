@@ -43,5 +43,85 @@
 </script>
 {% block extra_js %}{% endblock %}
 
+<script src="{% static 'users/js/feather.min.js' %}"></script>
+    <script>
+        feather.replace();
+    </script>
+    {% block extra_js %}{% endblock %}
+
+    <!-- ── Advertencia de inactividad ── -->
+    <div id="inactivity-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:9999; align-items:center; justify-content:center;">
+        <div style="background:white; border-radius:16px; padding:32px; max-width:400px; width:90%; text-align:center; box-shadow:0 20px 60px rgba(0,0,0,0.3);">
+            <i data-feather="clock" style="width:48px; height:48px; color:#f59e0b; margin-bottom:16px;"></i>
+            <h2 style="font-size:18px; font-weight:700; margin-bottom:8px;">¿Sigues ahí?</h2>
+            <p style="font-size:14px; color:var(--text-muted); margin-bottom:8px;">
+                Tu sesión expirará por inactividad en
+            </p>
+            <p style="font-size:32px; font-weight:700; color:#ef4444; margin-bottom:20px;" id="inactivity-countdown"></p>
+            <div style="display:flex; gap:12px; justify-content:center;">
+                <button onclick="extenderSesion()" style="padding:10px 24px; background:var(--primary); color:white; border:none; border-radius:8px; font-size:14px; font-weight:600; cursor:pointer;">
+                    Continuar sesión
+                </button>
+                <a href="{% url 'logout' %}" style="padding:10px 24px; background:#f1f5f9; color:var(--text-dark); border-radius:8px; font-size:14px; font-weight:600; text-decoration:none; display:inline-flex; align-items:center;">
+                    Cerrar sesión
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    (function() {
+        const SESSION_SECONDS = 900;
+        const WARNING_SECONDS = 120;
+        const LOGOUT_URL      = "{% url 'login' %}";
+        const PING_URL        = "{% url 'dashboard' %}";
+
+        let warningTimer, logoutTimer, countdownInterval;
+        let secondsLeft = WARNING_SECONDS;
+
+        function resetTimers() {
+            clearTimeout(warningTimer);
+            clearTimeout(logoutTimer);
+            clearInterval(countdownInterval);
+            document.getElementById('inactivity-modal').style.display = 'none';
+            secondsLeft = WARNING_SECONDS;
+
+            warningTimer = setTimeout(mostrarAdvertencia, (SESSION_SECONDS - WARNING_SECONDS) * 1000);
+            logoutTimer  = setTimeout(function() {
+                window.location.href = LOGOUT_URL;
+            }, SESSION_SECONDS * 1000);
+        }
+
+        function mostrarAdvertencia() {
+            secondsLeft = WARNING_SECONDS;
+            document.getElementById('inactivity-modal').style.display = 'flex';
+            feather.replace();
+
+            countdownInterval = setInterval(function() {
+                secondsLeft--;
+                const m = Math.floor(secondsLeft / 60);
+                const s = secondsLeft % 60;
+                document.getElementById('inactivity-countdown').textContent =
+                    (m > 0 ? m + 'm ' : '') + s + 's';
+                if (secondsLeft <= 0) {
+                    clearInterval(countdownInterval);
+                    window.location.href = LOGOUT_URL;
+                }
+            }, 1000);
+        }
+
+        window.extenderSesion = function() {
+            fetch(PING_URL, { credentials: 'same-origin' }).catch(function() {});
+            resetTimers();
+        };
+
+        ['mousemove', 'keydown', 'click', 'scroll', 'touchstart'].forEach(function(evento) {
+            document.addEventListener(evento, resetTimers, { passive: true });
+        });
+
+        resetTimers();
+    })();
+    </script>
+
 </body>
 </html>
