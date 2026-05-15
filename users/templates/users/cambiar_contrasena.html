@@ -1,0 +1,106 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Cambiar contraseña | PCI Cert Pro</title>
+    <link rel="stylesheet" href="{% static 'users/css/main.css' %}">
+</head>
+<body class="login-page">
+
+    <section class="login-hero">
+        <img src="{% static 'users/img/banner.jpg' %}" alt="Banner">
+        <div class="login-hero-overlay">
+            <img src="{% static 'users/img/logo.png' %}" class="login-logo">
+        </div>
+    </section>
+
+    <section class="login-wrapper">
+        <div class="login-card">
+
+            <h2 style="font-size:17px; font-weight:700; margin:0 0 4px;">
+                {% if perfil.forzar_cambio or perfil.contrasena_vencida %}
+                    Tu contraseña ha vencido
+                {% else %}
+                    Cambiar contraseña
+                {% endif %}
+            </h2>
+            <p style="font-size:13px; color:var(--text-muted); margin:0 0 1rem; line-height:1.5;">
+                {% if perfil.forzar_cambio or perfil.contrasena_vencida %}
+                    Por seguridad, debes establecer una nueva contraseña para continuar.
+                {% else %}
+                    Ingresa tu contraseña actual y define una nueva.
+                {% endif %}
+            </p>
+
+            {% if error %}
+                <div class="login-error">{{ error }}</div>
+            {% endif %}
+
+            <form method="post">
+                {% csrf_token %}
+
+                <label>Contraseña actual</label>
+                <input type="password" name="actual" required autocomplete="current-password">
+
+                <label style="margin-top:.75rem;">Nueva contraseña</label>
+                <input type="password" name="nueva" required autocomplete="new-password"
+                       id="id_nueva">
+
+                <label style="margin-top:.75rem;">Confirmar nueva contraseña</label>
+                <input type="password" name="repetir" required autocomplete="new-password"
+                       id="id_repetir">
+
+                <!-- Indicador de fortaleza -->
+                <div id="strength-bar" style="
+                    height:4px; border-radius:2px; margin-top:.5rem;
+                    background:#e2e8f0; overflow:hidden;">
+                    <div id="strength-fill" style="height:100%; width:0; transition:width .3s, background .3s;"></div>
+                </div>
+                <p id="strength-label" style="font-size:11px; color:var(--text-muted); margin:4px 0 0;"></p>
+
+                <button type="submit" class="btn-primary" style="width:100%; margin-top:1.25rem;">
+                    Guardar contraseña
+                </button>
+            </form>
+
+        </div>
+    </section>
+
+<script>
+/* Indicador de fortaleza visual (solo orientativo) */
+const input  = document.getElementById('id_nueva');
+const fill   = document.getElementById('strength-fill');
+const label  = document.getElementById('strength-label');
+
+const levels = [
+    { min: 0,  pct: 0,   color: '#e2e8f0', text: '' },
+    { min: 1,  pct: 25,  color: '#ef4444', text: 'Muy débil' },
+    { min: 5,  pct: 50,  color: '#f97316', text: 'Débil' },
+    { min: 8,  pct: 75,  color: '#eab308', text: 'Moderada' },
+    { min: 12, pct: 100, color: '#22c55e', text: 'Fuerte' },
+];
+
+input.addEventListener('input', () => {
+    const p = input.value;
+    let score = 0;
+    if (p.length >= 8)  score++;
+    if (p.length >= 12) score++;
+    if (/[A-Z]/.test(p)) score++;
+    if (/[0-9]/.test(p)) score++;
+    if (/[^A-Za-z0-9]/.test(p)) score++;
+
+    const lvl = score === 0 ? levels[0]
+              : score <= 1  ? levels[1]
+              : score <= 2  ? levels[2]
+              : score <= 3  ? levels[3]
+              :                levels[4];
+
+    fill.style.width      = lvl.pct + '%';
+    fill.style.background = lvl.color;
+    label.textContent     = lvl.text;
+    label.style.color     = lvl.color;
+});
+</script>
+</body>
+</html>

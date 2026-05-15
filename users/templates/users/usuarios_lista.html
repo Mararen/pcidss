@@ -91,13 +91,19 @@
                         <i data-feather="edit"></i>
                     </a>
 
-                    <a href="{% url 'usuario_toggle' user.pk %}" class="btn-icon">
-                        {% if user.is_active %}
-                            <i data-feather="toggle-right"></i>
-                        {% else %}
-                            <i data-feather="toggle-left"></i>
-                        {% endif %}
-                    </a>
+					<form method="post" action="{% url 'usuario_toggle' user.pk %}" style="display:inline;">
+					{% csrf_token %}
+					<button type="submit" class="btn-icon"
+					title="{% if user.is_active %}Desactivar{% else %}Activar{% endif %}"
+					{% if user == request.user %}disabled title="No puedes desactivarte a ti mismo"{% endif %}>
+					{% if user.is_active %}
+					<i data-feather="toggle-right"></i>
+					{% else %}
+					<i data-feather="toggle-left"></i>
+					{% endif %}
+					</button>
+					</form>
+
                     {% endif %}
                 </div>
             </td>

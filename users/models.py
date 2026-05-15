@@ -33,6 +33,72 @@ class PoliticaSeguridad(models.Model):
 
 
 # ─────────────────────────────────────────────
+# PERFIL DE SEGURIDAD
+# ─────────────────────────────────────────────
+
+from datetime import timedelta
+from django.db.models.signals import post_save
+from django.dispatch import receiver
+
+
+class PerfilSeguridad(models.Model):
+    usuario           = models.OneToOneField(
+                          User, on_delete=models.CASCADE,
+                          related_name="perfil_seguridad"
+                        )
+    intentos_fallidos = models.IntegerField(default=0)
+    bloqueado_hasta   = models.DateTimeField(null=True, blank=True)
+    ultimo_intento    = models.DateTimeField(null=True, blank=True)
+    ultimo_login_ok   = models.DateTimeField(null=True, blank=True)
+    contrasena_desde  = models.DateTimeField(default=timezone.now)
+    forzar_cambio     = models.BooleanField(default=False)
+
+    def esta_bloqueado(self):
+        if not self.bloqueado_hasta:
+            return False
+        if timezone.now() < self.bloqueado_hasta:
+            return True
+        self.bloqueado_hasta   = None
+        self.intentos_fallidos = 0
+        self.save(update_fields=["bloqueado_hasta", "intentos_fallidos"])
+        return False
+
+    def segundos_restantes(self):
+        if self.bloqueado_hasta:
+            return max(int((self.bloqueado_hasta - timezone.now()).total_seconds()), 0)
+        return 0
+
+    def registrar_intento_fallido(self, minutos_bloqueo=30):
+        politica     = PoliticaSeguridad.objects.first()
+        max_intentos = politica.intentos_fallidos if politica else 5
+        self.intentos_fallidos += 1
+        self.ultimo_intento     = timezone.now()
+        if self.intentos_fallidos >= max_intentos:
+            self.bloqueado_hasta = timezone.now() + timedelta(minutes=minutos_bloqueo)
+        self.save(update_fields=["intentos_fallidos", "ultimo_intento", "bloqueado_hasta"])
+
+    def resetear_intentos(self):
+        self.intentos_fallidos = 0
+        self.bloqueado_hasta   = None
+        self.ultimo_login_ok   = timezone.now()
+        self.save(update_fields=["intentos_fallidos", "bloqueado_hasta", "ultimo_login_ok"])
+
+    def contrasena_vencida(self):
+        politica = PoliticaSeguridad.objects.first()
+        if not politica:
+            return False
+        return timezone.now() > (self.contrasena_desde + timedelta(days=politica.dias_vigencia))
+
+    def __str__(self):
+        return f"Seguridad: {self.usuario.username}"
+
+
+@receiver(post_save, sender=User)
+def crear_perfil_seguridad(sender, instance, created, **kwargs):
+    if created:
+        PerfilSeguridad.objects.get_or_create(usuario=instance)
+        
+# ─────────────────────────────────────────────
 # NOTIFICACIONES
 # ─────────────────────────────────────────────
 

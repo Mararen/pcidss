@@ -120,3 +120,12 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 LOGIN_URL = '/'
 LOGIN_REDIRECT_URL = '/dashboard/'
 LOGOUT_REDIRECT_URL = '/'
+
+# =========================
+# AUTH VALIDATORS
+# =========================
+AUTH_PASSWORD_VALIDATORS = [
+    {"NAME": "users.validators.PoliticaSeguridadValidator"},
+    {"NAME": "django.contrib.auth.password_validation.CommonPasswordValidator"},
+    {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
+]
