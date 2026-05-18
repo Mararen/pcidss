@@ -935,12 +935,11 @@ class EvidenciaListView(
         qs = (
             Evidencia.objects
             .select_related(
-                'entidad',
-                'subido_por'
-            )
-            .filter(activa=True)
-            .order_by('-fecha_subida')
+            'entidad',
+            'subido_por'
         )
+            .order_by('-fecha_subida')
+)
 
         buscar = self.request.GET.get(
             'buscar'
