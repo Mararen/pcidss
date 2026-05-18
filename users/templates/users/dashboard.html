@@ -77,7 +77,7 @@
             <thead>
                 <tr>
                     <th>Usuario</th>
-                    <th>IP</th>
+                    <!--<th>IP</th>-->
                     <th>Fecha</th>
                 </tr>
             </thead>
@@ -90,7 +90,7 @@
                             {{ log.usuario.username|default:"—" }}
                         </span>
                     </td>
-                    <td><code>{{ log.ip|default:"—" }}</code></td>
+                    <!--<td><code>{{ log.ip|default:"—" }}</code></td>-->
                     <td>{{ log.fecha|date:"d/m/Y H:i" }}</td>
                 </tr>
                 {% empty %}

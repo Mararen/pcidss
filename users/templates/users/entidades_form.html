@@ -1,27 +1,80 @@
 {% extends 'users/base.html' %}
 {% load static %}
-
-{% block title %}Entidad | PCI Cert Pro{% endblock %}
-
+{% block title %}
+    {% if form.instance.pk %}Editar Entidad{% else %}Nueva Entidad{% endif %} | PCI Cert Pro
+{% endblock %}
 {% block content %}
-
 <div class="page-header">
-    <h1>{% if form.instance.pk %}Editar Entidad{% else %}Nueva Entidad{% endif %}</h1>
+    <div class="page-header-text">
+        <h1>{% if form.instance.pk %}Editar entidad{% else %}Nueva entidad{% endif %}</h1>
+        <p>Registra o actualiza la información de una entidad en el sistema.</p>
+    </div>
+    <div class="page-actions">
+        <a href="{% url 'entidades_lista' %}" class="btn-secondary">↶ Volver</a>
+    </div>
 </div>
-
-<div class="form-card">
-    <form method="post">
-        {% csrf_token %}
-        {{ form.as_p }}
-				<div class="form-actions">
-                <button type="submit" class="btn-primary">
-                    Guardar
-                </button>
-				<a href="{% url 'entidades_lista' %}" class="btn-secondary">
-                    Cancelar
-                </a>
-        </div>
-    </form>
+<div class="card" style="max-width:700px;">
+    <div class="card-header">
+        <h3>Datos de la entidad</h3>
+    </div>
+    <div class="card-body">
+        <form method="post" novalidate>
+            {% csrf_token %}
+            {% if form.non_field_errors %}
+                <div class="form-alert form-alert-error">
+                    {% for error in form.non_field_errors %}<p>{{ error }}</p>{% endfor %}
+                </div>
+            {% endif %}
+            <div class="form-grid">
+                {% for field in form %}
+                <div class="form-group {% if field.errors %}has-error{% endif %}">
+                    <label for="{{ field.id_for_label }}">
+                        {{ field.label }}
+                        {% if field.field.required %}<span class="required-star">*</span>{% endif %}
+                    </label>
+                    {{ field }}
+                    {% if field.help_text %}
+                        <small class="form-hint">
+                            <i data-feather="info" style="width:12px;height:12px;vertical-align:middle;margin-right:3px;"></i>
+                            {{ field.help_text }}
+                        </small>
+                    {% endif %}
+                    {% if field.errors %}
+                        {% for error in field.errors %}
+                            <small class="form-error">
+                                <i data-feather="alert-circle" style="width:12px;height:12px;vertical-align:middle;margin-right:3px;"></i>
+                                {{ error }}
+                            </small>
+                        {% endfor %}
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+            <div class="form-actions">
+                <button type="submit" class="btn-primary">Guardar</button>
+                <a href="{% url 'entidades_lista' %}" class="btn-secondary">Cancelar</a>
+            </div>
+        </form>
+    </div>
 </div>
+{% endblock %}
 
+{% block extra_css %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+/* Auto-formato de sitio_web: añade https:// si el usuario no lo escribe */
+document.addEventListener('DOMContentLoaded', function () {
+    const sitioWeb = document.getElementById('id_sitio_web');
+    if (!sitioWeb) return;
+
+    sitioWeb.addEventListener('blur', function () {
+        const val = this.value.trim();
+        if (val && !val.startsWith('http://') && !val.startsWith('https://')) {
+            this.value = 'https://' + val;
+        }
+    });
+});
+</script>
 {% endblock %}

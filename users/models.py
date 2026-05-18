@@ -140,6 +140,7 @@ class PermisosSistema(models.Model):
             ("ver_entidades",            "Puede ver entidades"),
             ("gestionar_entidades",      "Puede gestionar entidades"),
             ("ver_evidencias",           "Puede ver evidencias"),
+            ("gestionar_evidencias",     "Puede gestionar evidencias"),
             ("gestionar_renovacion",     "Puede gestionar renovación"),
             ("gestionar_configuracion",  "Puede gestionar configuración"),
         ]
@@ -188,35 +189,127 @@ class LogAuditoria(models.Model):
 # ─────────────────────────────────────────────
 
 class Entidad(models.Model):
-    usuario = models.ForeignKey(User, on_delete=models.CASCADE)
+    usuario = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE
+    )
 
-    nombre_empresa = models.CharField(max_length=150)
-    dba = models.CharField(max_length=150)
-    email = models.EmailField()
-    sitio_web = models.URLField(blank=True, null=True)
-    contacto = models.CharField(max_length=150)
+    nombre_empresa = models.CharField(
+        max_length=100,
+        unique=True
+    )
+
+    dba = models.CharField(
+        max_length=100
+    )
+
+    email = models.EmailField(
+        unique=True
+    )
+
+    sitio_web = models.URLField(
+        blank=True,
+        null=True
+    )
+
+    contacto = models.CharField(
+        max_length=100
+    )
+
     is_active = models.BooleanField(default=True)
 
     creado_por = models.ForeignKey(
-    User,
-    on_delete=models.SET_NULL,
-    null=True,
-    related_name="entidades_creadas"
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name='entidades_creadas'
     )
 
     modificado_por = models.ForeignKey(
-    User,
-    on_delete=models.SET_NULL,
-    null=True,
-    related_name="entidades_modificadas"
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name='entidades_modificadas'
     )
 
     fecha_creacion = models.DateTimeField(auto_now_add=True)
     fecha_modificacion = models.DateTimeField(auto_now=True)
 
+    class Meta:
+        verbose_name = 'Entidad'
+        verbose_name_plural = 'Entidades'
+        ordering = ['-fecha_modificacion']
+
     def __str__(self):
         return self.nombre_empresa
+        
+# ─────────────────────────────────────────────
+# EVIDENCIA
+# ─────────────────────────────────────────────
 
+class Evidencia(models.Model):
 
+    TIPOS = [
+        ('ASV', 'ASV Scan'),
+        ('SAQ', 'SAQ'),
+        ('POLITICA', 'Política'),
+        ('CAPTURA', 'Captura'),
+        ('FIREWALL', 'Firewall'),
+        ('OTRO', 'Otro'),
+    ]
 
+    entidad = models.ForeignKey(
+        'Entidad',
+        on_delete=models.CASCADE,
+        related_name='evidencias'
+    )
 
+    titulo = models.CharField(
+        max_length=150
+    )
+
+    descripcion = models.TextField(
+        blank=True,
+        null=True
+    )
+
+    tipo = models.CharField(
+        max_length=20,
+        choices=TIPOS,
+        default='OTRO'
+    )
+
+    archivo = models.FileField(
+        upload_to='evidencias/%Y/%m/'
+    )
+
+    version = models.PositiveIntegerField(
+        default=1
+    )
+
+    subido_por = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name='evidencias_subidas'
+    )
+
+    fecha_subida = models.DateTimeField(
+        auto_now_add=True
+    )
+
+    fecha_modificacion = models.DateTimeField(
+        auto_now=True
+    )
+
+    activa = models.BooleanField(
+        default=True
+    )
+
+    class Meta:
+        ordering = ['-fecha_subida']
+        verbose_name = 'Evidencia'
+        verbose_name_plural = 'Evidencias'
+
+    def __str__(self):
+        return self.titulo

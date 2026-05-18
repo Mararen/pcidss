@@ -1,0 +1,145 @@
+{% extends 'users/base.html' %}
+{% load static %}
+
+{% block title %}
+    Evidencias
+{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'users/css/evidencias.css' %}">
+{% endblock %}
+
+{% block content %}
+
+<div class="evidencias-module">
+
+    <div class="page-header">
+
+        <div class="page-header-text">
+            <h1>Repositorio de evidencias</h1>
+
+            <p>
+                Administra documentos, escaneos ASV, políticas,
+                capturas y demás archivos relacionados con PCI DSS.
+            </p>
+        </div>
+
+        <div class="page-header-actions">
+
+            <a href="{% url 'evidencia_crear' %}" class="btn-primary">
+                + Nueva evidencia
+            </a>
+
+        </div>
+
+    </div>
+
+    <div class="card">
+
+        <div class="card-header">
+
+            <h3>Listado de evidencias</h3>
+
+            <form method="get" class="search-form">
+
+                <div class="search-box">
+
+                    <input
+                        type="text"
+                        name="buscar"
+                        placeholder="Buscar evidencia..."
+                        value="{{ request.GET.buscar }}"
+                    >
+
+                    <button type="submit">
+                        <i data-feather="search"></i>
+                    </button>
+
+                </div>
+
+            </form>
+
+        </div>
+
+        <div class="card-body">
+
+            {% if evidencias %}
+
+                <div class="evidencias-grid">
+
+                    {% for evidencia in evidencias %}
+
+                    <div class="evidencia-card">
+
+                        <div class="preview-container">
+
+                            {% with evidencia.archivo.url|lower as archivo_url %}
+
+							{% if '.png' in archivo_url or '.jpg' in archivo_url or '.jpeg' in archivo_url or '.webp' in archivo_url %}
+
+								<img src="{{ evidencia.archivo.url }}" class="preview-image" alt="{{ evidencia.titulo }}">
+
+							{% else %}
+
+								<div class="file-icon">
+									📄
+								</div>
+
+							{% endif %}
+
+						{% endwith %}
+
+                        </div>
+
+                        <div class="evidencia-info">
+
+                            <h4>{{ evidencia.titulo }}</h4>
+
+                            <p>
+                                {{ evidencia.descripcion|default:"Sin descripción" }}
+                            </p>
+
+                            <span class="badge">
+                                {{ evidencia.get_tipo_display }}
+                            </span>
+
+                        </div>
+
+                        <div class="evidencia-actions">
+
+                            <a
+                                href="{% url 'evidencia_descargar' evidencia.id %}"
+                                class="btn-secondary"
+                            >
+                                Descargar
+                            </a>
+
+                        </div>
+
+                    </div>
+
+                    {% endfor %}
+
+                </div>
+
+            {% else %}
+
+                <div class="empty-state">
+
+                    <h3>No hay evidencias</h3>
+
+                    <p>
+                        Aún no se han cargado archivos.
+                    </p>
+
+                </div>
+
+            {% endif %}
+
+        </div>
+
+    </div>
+
+</div>
+
+{% endblock %}

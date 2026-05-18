@@ -1,0 +1,198 @@
+.evidencias-module .card {
+    border-radius: 18px;
+    overflow: hidden;
+}
+
+.evidencias-module .card-header {
+
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 20px;
+
+    flex-wrap: wrap;
+}
+
+.evidencias-module .search-form {
+    width: 100%;
+    max-width: 350px;
+}
+
+.evidencias-module .search-box {
+    position: relative;
+}
+
+.evidencias-module .search-box input {
+
+    width: 100%;
+
+    padding: 12px 45px 12px 14px;
+
+    border: 1px solid #dcdfe6;
+    border-radius: 12px;
+
+    font-size: 14px;
+}
+
+.evidencias-module .search-box button {
+
+    position: absolute;
+
+    top: 50%;
+    right: 12px;
+
+    transform: translateY(-50%);
+
+    border: none;
+    background: transparent;
+
+    cursor: pointer;
+}
+
+.evidencias-grid {
+
+    display: grid;
+
+    grid-template-columns:
+        repeat(auto-fill, minmax(280px, 1fr));
+
+    gap: 20px;
+}
+
+.evidencia-card {
+
+    border: 1px solid #e5e7eb;
+    border-radius: 18px;
+
+    overflow: hidden;
+
+    background: #fff;
+
+    transition: .2s ease;
+}
+
+.preview-container {
+
+    height: 180px;
+
+    background: #f8fafc;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.preview-image {
+
+    width: 100%;
+    height: 100%;
+
+    object-fit: cover;
+}
+
+.file-icon {
+
+    font-size: 60px;
+}
+
+.evidencia-info {
+
+    padding: 18px;
+}
+
+.evidencia-info h4 {
+
+    margin-bottom: 10px;
+}
+
+.evidencia-info p {
+
+    color: #64748b;
+    font-size: 14px;
+}
+
+.badge {
+
+    display: inline-block;
+
+    margin-top: 12px;
+
+    padding: 6px 10px;
+
+    border-radius: 999px;
+
+    background: #eff6ff;
+    color: #2563eb;
+
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.evidencia-actions {
+
+    padding: 0 18px 18px;
+}
+
+.evidencia-form-card {
+    max-width: 700px;
+}
+
+.form-actions {
+
+    margin-top: 24px;
+
+    display: flex;
+    gap: 12px;
+
+    flex-wrap: wrap;
+}
+
+.empty-state {
+
+    text-align: center;
+
+    padding: 60px 20px;
+}
+
+/* RESPONSIVE */
+
+@media (max-width: 768px) {
+
+    .evidencias-module .card-header {
+
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .evidencias-module .search-form {
+
+        max-width: 100%;
+    }
+
+    .evidencias-grid {
+
+        grid-template-columns: 1fr;
+    }
+
+    .form-actions {
+
+        flex-direction: column;
+    }
+
+    .form-actions .btn-primary,
+    .form-actions .btn-secondary {
+
+        width: 100%;
+        text-align: center;
+    }
+}
+
+.preview-image {
+
+    width: 100%;
+    height: 100%;
+
+    object-fit: cover;
+
+    display: block;
+}

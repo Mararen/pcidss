@@ -1,8 +1,6 @@
 {% extends 'users/base.html' %}
 {% load static %}
-
 {% block title %}Entidades | PCI Cert Pro{% endblock %}
-
 {% block content %}
 
 <div class="page-header">
@@ -10,17 +8,18 @@
         <h1>Administración de entidades</h1>
         <p>Visualiza, edita y activa o desactiva entidades registradas.</p>
     </div>
-
     <div style="display:flex; align-items:center; gap:15px;">
+        {% if perms.users.gestionar_entidades %}
         <a href="{% url 'entidad_crear' %}" class="btn-primary">
             + Nueva Entidad
         </a>
+        {% endif %}
         <div class="page-header-logo-min">
             {% if config_global and config_global.logo %}
-    <img src="{{ config_global.logo.url }}">
-{% else %}
-    <img src="{% static 'users/img/logo.png' %}">
-{% endif %}
+                <img src="{{ config_global.logo.url }}">
+            {% else %}
+                <img src="{% static 'users/img/logo.png' %}">
+            {% endif %}
         </div>
     </div>
 </div>
@@ -33,103 +32,92 @@
     </div>
 </div>
 
-            <table class="modern-table">
-
-                <thead>
-                    <tr>
-                        <th>Empresa</th>
-                        <th>DBA</th>
-                        <th>Email</th>
-                        <th>Contacto</th>
-                        <th>Estado</th>
-                        <th>Creado por</th>
-                        <th>Creación</th>
-                        <th>Última modificación</th>
-                        <th>Acciones</th>
-                    </tr>
-                </thead>
-
-<tbody>
-{% for entidad in entidades %}
-<tr>
-    <td>{{ entidad.nombre_empresa }}</td>
-    <td>{{ entidad.dba }}</td>
-    <td>{{ entidad.email }}</td>
-    <td>{{ entidad.contacto }}</td>
-
-    <td>
-        {% if entidad.is_active %}
-            <span class="badge badge-success">Activa</span>
-        {% else %}
-            <span class="badge badge-danger">Inactiva</span>
-        {% endif %}
-    </td>
-
-    <td>{{ entidad.creado_por.username|default:"Sistema" }}</td>
-
-    <td>{{ entidad.fecha_creacion|date:"Y-m-d H:i" }}</td>
-
-    <td>{{ entidad.fecha_modificacion|date:"Y-m-d H:i" }}</td>
-
-    <td>
-        <div class="actions">
-
-            <a href="{% url 'entidades_detalle' entidad.pk %}" class="btn-icon">
-                <i data-feather="eye"></i>
-            </a>
-
-            {% if perms.users.gestionar_entidades %}
-
-            <a href="{% url 'entidad_editar' entidad.pk %}" class="btn-icon">
-                <i data-feather="edit"></i>
-            </a>
-
-            <a href="{% url 'entidad_toggle' entidad.pk %}" class="btn-icon">
-                {% if entidad.is_active %}
-                    <i data-feather="toggle-right"></i>
+<table class="modern-table">
+    <thead>
+        <tr>
+            <th>Empresa</th>
+            <th>DBA</th>
+            <th>Email</th>
+            <th>Sitio web</th>
+            <th>Contacto</th>
+            <th>Estado</th>
+            <th>Creado por</th>
+            <th>Creación</th>
+            <th>Acciones</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for entidad in entidades %}
+        <tr>
+            <td>{{ entidad.nombre_empresa }}</td>
+            <td>{{ entidad.dba }}</td>
+            <td>
+                <a href="mailto:{{ entidad.email }}">{{ entidad.email }}</a>
+            </td>
+            <td>
+                {% if entidad.sitio_web %}
+                    <a href="{{ entidad.sitio_web }}" target="_blank" rel="noopener"
+                       style="font-size:12px; color:var(--primary);">
+                        {{ entidad.sitio_web|truncatechars:30 }}
+                    </a>
                 {% else %}
-                    <i data-feather="toggle-left"></i>
+                    <span style="color:var(--text-muted);">—</span>
                 {% endif %}
-            </a>
-
-            {% endif %}
-
-        </div>
-    </td>
-</tr>
-{% empty %}
-<tr>
-    <td colspan="9">No hay entidades registradas.</td>
-</tr>
-{% endfor %}
-</tbody>
+            </td>
+            <td>{{ entidad.contacto }}</td>
+            <td>
+                {% if entidad.is_active %}
+                    <span class="badge badge-success">Activa</span>
+                {% else %}
+                    <span class="badge badge-danger">Inactiva</span>
+                {% endif %}
+            </td>
+            <td>{{ entidad.creado_por.username|default:"Sistema" }}</td>
+            <td>{{ entidad.fecha_creacion|date:"Y-m-d H:i" }}</td>
+            <td>
+                <div class="actions">
+                    <a href="{% url 'entidades_detalle' entidad.pk %}" class="btn-icon">
+                        <i data-feather="eye"></i>
+                    </a>
+                    {% if perms.users.gestionar_entidades %}
+                    <a href="{% url 'entidad_editar' entidad.pk %}" class="btn-icon">
+                        <i data-feather="edit"></i>
+                    </a>
+                    <form method="post" action="{% url 'entidad_toggle' entidad.pk %}" style="display:inline;">
+                        {% csrf_token %}
+                        <button type="submit" class="btn-icon" style="background:none; border:none; cursor:pointer; padding:0;">
+                            {% if entidad.is_active %}
+                                <i data-feather="toggle-right"></i>
+                            {% else %}
+                                <i data-feather="toggle-left"></i>
+                            {% endif %}
+                        </button>
+                    </form>
+                    {% endif %}
+                </div>
+            </td>
+        </tr>
+        {% empty %}
+        <tr>
+            <td colspan="9" style="text-align:center; color:var(--text-muted); padding:24px;">
+                No hay entidades registradas.
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
 </table>
 
 <div class="pagination">
-    <div>
-        Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}
-    </div>
-
+    <div>Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</div>
     <div class="pagination-controls">
         {% if page_obj.has_previous %}
-            <a href="?page={{ page_obj.previous_page_number }}">Anterior</a>
+            <a href="?page={{ page_obj.previous_page_number }}{% if request.GET.buscar %}&buscar={{ request.GET.buscar }}{% endif %}">Anterior</a>
         {% endif %}
-
         <span class="current">{{ page_obj.number }}</span>
-
         {% if page_obj.has_next %}
-            <a href="?page={{ page_obj.next_page_number }}">Siguiente</a>
+            <a href="?page={{ page_obj.next_page_number }}{% if request.GET.buscar %}&buscar={{ request.GET.buscar }}{% endif %}">Siguiente</a>
         {% endif %}
     </div>
 </div>
 
 {% endblock %}
-
-        </section>
-
-    </main>
-
-</div>
-
-</body>
-</html>

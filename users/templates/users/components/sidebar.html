@@ -1,8 +1,6 @@
 {% load static %}
-
 <aside class="sidebar">
-
-    <div class="profile">
+    <div class="profile" id="profile-toggle" style="cursor:pointer; position:relative;">
         <img src="{% static 'users/img/profile.png' %}" alt="Perfil">
         <h4>{{ request.user.get_full_name|default:request.user.username }}</h4>
         <p>
@@ -12,52 +10,121 @@
                 {{ request.user.groups.first.name|default:"Usuario" }}
             {% endif %}
         </p>
+
+        <!-- ── Menú desplegable ── -->
+        <div id="profile-menu" style="
+            display:none;
+            position:absolute;
+            top:100%;
+            left:12px;
+            right:12px;
+            background:white;
+            border-radius:10px;
+            box-shadow:0 8px 24px rgba(0,0,0,0.15);
+            z-index:100;
+            overflow:hidden;
+            margin-top:8px;
+        ">
+            <a href="{% url 'usuario_detalle' request.user.pk %}" style="
+                display:flex;
+                align-items:center;
+                gap:10px;
+                padding:12px 16px;
+                color:var(--text-dark);
+                text-decoration:none;
+                font-size:13px;
+                font-weight:500;
+                transition:background 0.15s;
+            " onmouseover="this.style.background='var(--bg-light)'"
+               onmouseout="this.style.background='white'">
+                <i data-feather="user" style="width:15px;height:15px;color:var(--primary);"></i>
+                Ver perfil
+            </a>
+            <a href="{% url 'cambiar_contrasena' %}" style="
+                display:flex;
+                align-items:center;
+                gap:10px;
+                padding:12px 16px;
+                color:var(--text-dark);
+                text-decoration:none;
+                font-size:13px;
+                font-weight:500;
+                border-top:1px solid var(--border);
+                transition:background 0.15s;
+            " onmouseover="this.style.background='var(--bg-light)'"
+               onmouseout="this.style.background='white'">
+                <i data-feather="lock" style="width:15px;height:15px;color:var(--primary);"></i>
+                Cambiar contraseña
+            </a>
+        </div>
     </div>
 
     <nav class="menu">
-
         <a href="{% url 'dashboard' %}" class="{% if request.path == '/dashboard/' %}active{% endif %}">
             <i data-feather="grid"></i> Dashboard
         </a>
-
         {% if perms.users.ver_usuarios %}
         <a href="{% url 'usuarios_lista' %}">
             <i data-feather="users"></i> Usuarios
         </a>
         {% endif %}
-
         {% if perms.users.ver_entidades %}
         <a href="{% url 'entidades_lista' %}">
             <i data-feather="home"></i> Entidades
         </a>
         {% endif %}
-
         {% if perms.users.ver_saq %}
         <a href="{% url 'saq:saq_lista' %}">
             <i data-feather="file-text"></i> SAQ
+        </a>
         {% endif %}
-
         {% if perms.users.ver_pretest %}
         <a href="{% url 'saq:pretest_lista' %}">
             <i data-feather="check-square"></i> Pre-Test
+        </a>
         {% endif %}
-
         {% if perms.users.ver_evidencias %}
-        <a href="#">
+        <a href="{% url 'evidencias_lista' %}">
             <i data-feather="paperclip"></i> Evidencias
         </a>
         {% endif %}
-
-        {% if perms.users.gestionar_renovacion %}
-        <a href="#">
-            <i data-feather="star"></i> Renovación
-        </a>
-        {% endif %}
-
         <a href="{% url 'logout' %}" class="logout">
             <i data-feather="log-out"></i> Cerrar sesión
         </a>
-
     </nav>
-
 </aside>
+
+<script>
+(function() {
+    const toggle = document.getElementById('profile-toggle');
+    const menu   = document.getElementById('profile-menu');
+
+    toggle.addEventListener('click', function(e) {
+        const isOpen = menu.style.display === 'block';
+        menu.style.display = isOpen ? 'none' : 'block';
+        e.stopPropagation();
+    });
+
+    // Cierra el menú al hacer clic fuera
+    document.addEventListener('click', function() {
+        menu.style.display = 'none';
+    });
+
+    // Evita que los clics dentro del menú lo cierren
+    menu.addEventListener('click', function(e) {
+        e.stopPropagation();
+    });
+})();
+</script>
+		
+		<!-- 
+		{# Desactivado por funcionalidad en desarrollo #}
+
+{% comment %}
+{% if perms.users.gestionar_renovacion %}
+<a href="#">
+    <i data-feather="star"></i> Renovación
+</a>
+{% endif %}
+{% endcomment %}
+-->

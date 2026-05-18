@@ -40,4 +40,11 @@ urlpatterns = [
     path('entidades/<int:pk>/',           views.EntidadDetalleView.as_view(),name='entidades_detalle'),
     path('entidades/<int:pk>/editar/',    views.EntidadUpdateView.as_view(), name='entidad_editar'),
     path('entidades/<int:pk>/toggle/',    views.entidad_toggle,              name='entidad_toggle'),
+    
+    # EVIDENCIAS
+    path('evidencias/',                   views.EvidenciaListView.as_view(), name='evidencias_lista'),
+    path('evidencias/nueva/',             views.EvidenciaCreateView.as_view(),name='evidencia_crear'),
+    path('evidencias/<int:pk>/descargar/',views.evidencia_descargar,         name='evidencia_descargar'),
+    path('evidencias/<int:pk>/eliminar/', views.EvidenciaDeleteView.as_view(),name='evidencia_eliminar'),
+
 ]

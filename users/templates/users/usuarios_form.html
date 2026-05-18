@@ -1,85 +1,99 @@
 {% extends 'users/base.html' %}
 {% load static %}
-
 {% block title %}
-    {% if form.instance.pk %}Editar Usuario{% else %}Nuevo Usuario{% endif %}
+    {% if form.instance.pk %}Editar Usuario{% else %}Nuevo Usuario{% endif %} | PCI Cert Pro
 {% endblock %}
-
 {% block content %}
-
 <div class="page-header">
     <div class="page-header-text">
         <h1>
-            {% if form.instance.pk %}
+            {% if form.instance.pk == request.user.pk %}
+                Mi perfil
+            {% elif form.instance.pk %}
                 Editar usuario
             {% else %}
                 Nuevo usuario
             {% endif %}
         </h1>
-        <p>Gestiona la información del usuario dentro del sistema.</p>
+        <p>
+            {% if form.instance.pk == request.user.pk %}
+                Actualiza tu información personal.
+            {% else %}
+                Gestiona la información del usuario dentro del sistema.
+            {% endif %}
+        </p>
     </div>
-
     <div class="page-actions">
-        <a href="{% url 'usuarios_lista' %}" class="btn-secondary">
-            ↶ Volver
-        </a>
+        {% if request.user.pk == form.instance.pk %}
+            <a href="{% url 'usuario_detalle' form.instance.pk %}" class="btn-secondary">↶ Volver</a>
+        {% else %}
+            <a href="{% url 'usuarios_lista' %}" class="btn-secondary">↶ Volver</a>
+        {% endif %}
     </div>
 </div>
-
-<div class="card" style="max-width:700px;">
-
+<div class="card" style="max-width:750px;">
     <div class="card-header">
         <h3>Datos del usuario</h3>
     </div>
-
     <div class="card-body">
-
-        <form method="post">
+        <form method="post" novalidate>
             {% csrf_token %}
-
+            {% if form.non_field_errors %}
+                <div class="form-alert form-alert-error">
+                    {% for error in form.non_field_errors %}
+                        <p>{{ error }}</p>
+                    {% endfor %}
+                </div>
+            {% endif %}
             <div class="form-grid">
-
                 {% for field in form %}
                     {% if field.name != "rol" %}
-                    <div class="form-group">
-                        <label>{{ field.label }}</label>
+                    <div class="form-group {% if field.errors %}has-error{% endif %}">
+                        <label for="{{ field.id_for_label }}">
+                            {{ field.label }}
+                            {% if field.field.required %}
+                                <span class="required-star">*</span>
+                            {% endif %}
+                        </label>
                         {{ field }}
-
+                        {% if field.help_text %}
+                            <small class="form-hint">
+                                <i data-feather="info" style="width:12px;height:12px;vertical-align:middle;margin-right:3px;"></i>
+                                {{ field.help_text }}
+                            </small>
+                        {% endif %}
                         {% if field.errors %}
-                            <div class="login-error">
-                                {{ field.errors }}
-                            </div>
+                            {% for error in field.errors %}
+                                <small class="form-error">
+                                    <i data-feather="alert-circle" style="width:12px;height:12px;vertical-align:middle;margin-right:3px;"></i>
+                                    {{ error }}
+                                </small>
+                            {% endfor %}
                         {% endif %}
                     </div>
                     {% endif %}
                 {% endfor %}
-
-                <!-- Rol separado -->
-                <div class="form-group">
-                    <label>Rol</label>
+                {% if form.rol %}
+                <div class="form-group {% if form.rol.errors %}has-error{% endif %}">
+                    <label for="{{ form.rol.id_for_label }}">Rol</label>
                     {{ form.rol }}
-
                     {% if form.rol.errors %}
-                        <div class="login-error">
-                            {{ form.rol.errors }}
-                        </div>
+                        {% for error in form.rol.errors %}
+                            <small class="form-error">{{ error }}</small>
+                        {% endfor %}
                     {% endif %}
                 </div>
-
+                {% endif %}
             </div>
-
             <div class="form-actions">
-				<button type="submit" class="btn-primary">
-                    Guardar
-                </button>
-                <a href="{% url 'usuarios_lista' %}" class="btn-secondary">
-                    Cancelar
-                </a>
+                <button type="submit" class="btn-primary">Guardar</button>
+                {% if request.user.pk == form.instance.pk %}
+                    <a href="{% url 'usuario_detalle' form.instance.pk %}" class="btn-secondary">Cancelar</a>
+                {% else %}
+                    <a href="{% url 'usuarios_lista' %}" class="btn-secondary">Cancelar</a>
+                {% endif %}
             </div>
-
         </form>
-
     </div>
 </div>
-
 {% endblock %}

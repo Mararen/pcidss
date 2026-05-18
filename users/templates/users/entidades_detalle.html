@@ -38,6 +38,19 @@
             <span class="label">Email</span>
             <span class="value">{{ entidad.email }}</span>
         </div>
+		
+		<div class="detail-row">
+			<span class="label">Sitio web</span>
+			<span class="value">
+        {% if entidad.sitio_web %}
+            <a href="{{ entidad.sitio_web }}" target="_blank" rel="noopener">
+                {{ entidad.sitio_web }}
+            </a>
+        {% else %}
+            —
+        {% endif %}
+			</span>
+		</div>
 
         <div class="detail-row">
             <span class="label">Contacto</span>

@@ -1,0 +1,98 @@
+{% extends 'users/base.html' %}
+{% load static %}
+
+{% block title %}
+    Nueva Evidencia
+{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'users/css/evidencias.css' %}">
+{% endblock %}
+
+{% block content %}
+
+<div class="evidencias-module">
+
+    <div class="page-header">
+
+        <div class="page-header-text">
+            <h1>Subir evidencia</h1>
+
+            <p>
+                Carga archivos de cumplimiento y documentación PCI.
+            </p>
+        </div>
+
+        <div class="page-header-actions">
+
+            <a href="{% url 'evidencias_lista' %}" class="btn-secondary">
+                ↶ Volver
+            </a>
+
+        </div>
+
+    </div>
+
+    <div class="card evidencia-form-card">
+
+        <div class="card-header">
+            <h3>Datos de la evidencia</h3>
+        </div>
+
+        <div class="card-body">
+
+            <form method="post" enctype="multipart/form-data">
+
+                {% csrf_token %}
+
+                <div class="form-grid">
+
+                    {% for field in form %}
+
+                    <div class="form-group {% if field.errors %}has-error{% endif %}">
+
+                        <label for="{{ field.id_for_label }}">
+                            {{ field.label }}
+                        </label>
+
+                        {{ field }}
+
+                        {% if field.help_text %}
+                            <small class="form-hint">
+                                {{ field.help_text }}
+                            </small>
+                        {% endif %}
+
+                        {% for error in field.errors %}
+                            <small class="form-error">
+                                {{ error }}
+                            </small>
+                        {% endfor %}
+
+                    </div>
+
+                    {% endfor %}
+
+                </div>
+
+                <div class="form-actions">
+
+                    <button type="submit" class="btn-primary">
+                        Guardar evidencia
+                    </button>
+
+                    <a href="{% url 'evidencias_lista' %}" class="btn-secondary">
+                        Cancelar
+                    </a>
+
+                </div>
+
+            </form>
+
+        </div>
+
+    </div>
+
+</div>
+
+{% endblock %}

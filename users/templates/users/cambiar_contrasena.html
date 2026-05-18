@@ -40,12 +40,25 @@
             <form method="post">
                 {% csrf_token %}
 
-                <label>Contraseña actual</label>
-                <input type="password" name="actual" required autocomplete="current-password">
+			<label>Contraseña actual</label>
+			<input type="password" name="actual" required autocomplete="current-password">
 
-                <label style="margin-top:.75rem;">Nueva contraseña</label>
-                <input type="password" name="nueva" required autocomplete="new-password"
-                       id="id_nueva">
+			<!-- ── Requisitos de contraseña ── -->
+				{% if politica %}
+			<div style="background:#f8fafc; border:1px solid var(--border); border-radius:8px; padding:12px 16px; margin-top:.75rem; font-size:13px;">
+				<p style="font-weight:600; margin-bottom:6px; color:var(--text-dark);">Requisitos de contraseña:</p>
+				<ul style="padding-left:16px; color:var(--text-muted); line-height:1.8; margin:0;">
+					<li>Mínimo {{ politica.longitud_minima }} caracteres</li>
+				{% if politica.requiere_mayusculas %}<li>Al menos una letra mayúscula</li>{% endif %}
+				{% if politica.requiere_numeros %}<li>Al menos un número</li>{% endif %}
+				{% if politica.requiere_simbolos %}<li>Al menos un símbolo (!@#$%...)</li>{% endif %}
+					<li>Vigencia: {{ politica.dias_vigencia }} días</li>
+				</ul>
+			</div>
+				{% endif %}
+
+			<label style="margin-top:.75rem;">Nueva contraseña</label>
+			<input type="password" name="nueva" required autocomplete="new-password" id="id_nueva">
 
                 <label style="margin-top:.75rem;">Confirmar nueva contraseña</label>
                 <input type="password" name="repetir" required autocomplete="new-password"

@@ -13,7 +13,7 @@ from users.views import registrar_log
 
 TIPOS_SAQ_ORDEN = ['A', 'AEP', 'B', 'BIP', 'C', 'CTV', 'D-COMERCIO', 'D-PROVEEDOR']
 SAQ_TYPES       = [(t, t) for t in TIPOS_SAQ_ORDEN]
-TIPOS_VALIDOS   = TIPOS_SAQ_ORDEN  # alias para validaciones
+TIPOS_VALIDOS   = TIPOS_SAQ_ORDEN
 
 TIPO_INPUT_CHOICES = [
     ('elegibilidad',   'Sí / No / N/A / No probado'),
@@ -26,8 +26,13 @@ TIPO_INPUT_CHOICES = [
     ('fecha',          'Fecha'),
 ]
 TIPOS_INPUT_VALIDOS = [t for t, _ in TIPO_INPUT_CHOICES]
+MAX_CHARS_RESPUESTA = 5000
 
-MAX_CHARS_RESPUESTA = 5000  # límite global de longitud para respuestas de texto
+
+def _siguiente_numero():
+    """Devuelve el siguiente número disponible para una nueva PreguntaSAQ."""
+    ultimo = PreguntaSAQ.objects.order_by('-numero').values_list('numero', flat=True).first()
+    return (ultimo or 0) + 1
 
 
 # ════════════════════════════════════════════════════════════════
@@ -36,26 +41,20 @@ MAX_CHARS_RESPUESTA = 5000  # límite global de longitud para respuestas de text
 
 @login_required
 def saq_lista(request):
-    """Lista paginada de preguntas con filtro por SAQ y búsqueda."""
     qs = PreguntaSAQ.objects.filter(activo=True).order_by('numero')
-
     tipo   = request.GET.get('tipo', '')
     buscar = request.GET.get('buscar', '')
-
     if tipo:
         qs = qs.filter(tipo_saq=tipo)
     if buscar:
         qs = qs.filter(
             Q(pregunta_es__icontains=buscar) | Q(pregunta_en__icontains=buscar)
         )
-
     conteos = {'ALL': PreguntaSAQ.objects.filter(activo=True).count()}
     for t in TIPOS_SAQ_ORDEN:
         conteos[t] = PreguntaSAQ.objects.filter(activo=True, tipo_saq=t).count()
-
     paginator = Paginator(qs, 15)
     page_obj  = paginator.get_page(request.GET.get('page'))
-
     return render(request, 'saq/saq_lista.html', {
         'page_obj':    page_obj,
         'conteos':     conteos,
@@ -68,7 +67,6 @@ def saq_lista(request):
 @login_required
 @permission_required('saq.add_preguntasaq', raise_exception=True)
 def saq_crear(request):
-    """GET → formulario vacío. POST → crea pregunta y redirige a lista."""
     errors = []
 
     if request.method == 'POST':
@@ -79,48 +77,34 @@ def saq_crear(request):
         seccion_aoc     = request.POST.get('seccion_aoc', 'Part 2h. Eligibility').strip()
         pregunta_es     = request.POST.get('pregunta_es', '').strip()
         pregunta_en     = request.POST.get('pregunta_en', '').strip()
-        opciones_json   = request.POST.get('opciones_json', '').strip()
         max_chars       = request.POST.get('max_chars', '').strip() or None
 
-        # ── Campos obligatorios ──────────────────────────────────
+        # Opciones recibidas como lista de campos individuales (no JSON manual)
+        opciones_lista  = [v.strip() for v in request.POST.getlist('opciones[]') if v.strip()]
+        opciones_parsed = opciones_lista if opciones_lista else None
+
         if not numero or not tipo_saq or not pregunta_es:
             errors.append('Número, Tipo SAQ y Pregunta ES son obligatorios.')
         else:
-            # ── Tipo de dato: número entero positivo ─────────────
             if not numero.isdigit():
                 errors.append('El número debe ser un entero positivo.')
-            # ── Unicidad ─────────────────────────────────────────
             elif PreguntaSAQ.objects.filter(numero=numero).exists():
                 errors.append(f'Ya existe una pregunta con el número {numero}.')
-
-            # ── Tipo SAQ contra lista permitida ──────────────────
             if tipo_saq not in TIPOS_VALIDOS:
                 errors.append(f'Tipo SAQ inválido. Opciones: {", ".join(TIPOS_VALIDOS)}')
-
-            # ── Tipo input contra lista permitida ────────────────
             if tipo_input not in TIPOS_INPUT_VALIDOS:
                 errors.append('Tipo de input no reconocido.')
-
-            # ── Longitud máxima de textos ─────────────────────────
             if len(pregunta_es) > 2000:
                 errors.append('La pregunta en español no puede superar 2000 caracteres.')
             if len(pregunta_en) > 2000:
                 errors.append('La pregunta en inglés no puede superar 2000 caracteres.')
 
-        # ── Opciones JSON ────────────────────────────────────────
-        opciones_parsed = None
-        if opciones_json:
-            try:
-                opciones_parsed = json.loads(opciones_json)
-                if not isinstance(opciones_parsed, list):
-                    errors.append('Opciones JSON debe ser una lista, ej: ["Op1","Op2"].')
-            except json.JSONDecodeError:
-                errors.append('Opciones JSON no tiene formato válido.')
-
-        # ── max_chars: rango razonable ───────────────────────────
         if max_chars:
             if not max_chars.isdigit() or not (1 <= int(max_chars) <= 10000):
                 errors.append('max_chars debe ser un número entre 1 y 10 000.')
+
+        if tipo_input in ('checkbox_multi', 'select') and not opciones_lista:
+            errors.append('Debes agregar al menos una opción para este tipo de respuesta.')
 
         if not errors:
             p = PreguntaSAQ.objects.create(
@@ -138,7 +122,6 @@ def saq_crear(request):
             return redirect('saq:saq_lista')
 
         form_data = request.POST
-
     else:
         form_data = {}
 
@@ -149,13 +132,14 @@ def saq_crear(request):
         'tipo_input_choices': TIPO_INPUT_CHOICES,
         'form':               form_data,
         'errors':             errors,
+        'siguiente_numero':   _siguiente_numero(),  # autogenerado
+        'opciones_existentes': [],
     })
 
 
 @login_required
 @permission_required('saq.change_preguntasaq', raise_exception=True)
 def saq_editar(request, pk):
-    """GET → formulario con datos actuales. POST → actualiza y redirige a lista."""
     pregunta = get_object_or_404(PreguntaSAQ, pk=pk)
     errors   = []
 
@@ -166,41 +150,26 @@ def saq_editar(request, pk):
         seccion_aoc     = request.POST.get('seccion_aoc', '').strip()
         pregunta_es     = request.POST.get('pregunta_es', '').strip()
         pregunta_en     = request.POST.get('pregunta_en', '').strip()
-        opciones_json   = request.POST.get('opciones_json', '').strip()
         max_chars       = request.POST.get('max_chars', '').strip() or None
 
-        # ── Campos obligatorios ──────────────────────────────────
+        opciones_lista  = [v.strip() for v in request.POST.getlist('opciones[]') if v.strip()]
+        opciones_parsed = opciones_lista if opciones_lista else pregunta.opciones_json
+
         if not tipo_saq or not pregunta_es:
             errors.append('Tipo SAQ y Pregunta ES son obligatorios.')
-
-        # ── Tipo SAQ contra lista permitida ──────────────────────
         if tipo_saq and tipo_saq not in TIPOS_VALIDOS:
-            errors.append(f'Tipo SAQ inválido. Opciones: {", ".join(TIPOS_VALIDOS)}')
-
-        # ── Tipo input contra lista permitida ────────────────────
+            errors.append(f'Tipo SAQ inválido.')
         if tipo_input and tipo_input not in TIPOS_INPUT_VALIDOS:
             errors.append('Tipo de input no reconocido.')
-
-        # ── Longitud máxima de textos ────────────────────────────
         if len(pregunta_es) > 2000:
             errors.append('La pregunta en español no puede superar 2000 caracteres.')
         if len(pregunta_en) > 2000:
             errors.append('La pregunta en inglés no puede superar 2000 caracteres.')
-
-        # ── Opciones JSON ────────────────────────────────────────
-        opciones_parsed = pregunta.opciones_json
-        if opciones_json:
-            try:
-                opciones_parsed = json.loads(opciones_json)
-                if not isinstance(opciones_parsed, list):
-                    errors.append('Opciones JSON debe ser una lista, ej: ["Op1","Op2"].')
-            except json.JSONDecodeError:
-                errors.append('Opciones JSON no tiene formato válido.')
-
-        # ── max_chars: rango razonable ───────────────────────────
         if max_chars:
             if not max_chars.isdigit() or not (1 <= int(max_chars) <= 10000):
                 errors.append('max_chars debe ser un número entre 1 y 10 000.')
+        if tipo_input in ('checkbox_multi', 'select') and not opciones_lista:
+            errors.append('Debes agregar al menos una opción para este tipo de respuesta.')
 
         if not errors:
             pregunta.tipo_saq        = tipo_saq
@@ -216,7 +185,6 @@ def saq_editar(request, pk):
             return redirect('saq:saq_lista')
 
         form_data = request.POST
-
     else:
         form_data = {
             'numero':          pregunta.numero,
@@ -226,51 +194,41 @@ def saq_editar(request, pk):
             'seccion_aoc':     pregunta.seccion_aoc,
             'pregunta_es':     pregunta.pregunta_es,
             'pregunta_en':     pregunta.pregunta_en,
-            'opciones_json':   json.dumps(pregunta.opciones_json) if pregunta.opciones_json else '',
             'max_chars':       pregunta.max_chars or '',
         }
 
     return render(request, 'saq/saq_form.html', {
-        'titulo':             f'Editar pregunta #{pregunta.numero}',
-        'accion':             'Guardar cambios',
-        'tipos':              SAQ_TYPES,
-        'tipo_input_choices': TIPO_INPUT_CHOICES,
-        'form':               form_data,
-        'pregunta':           pregunta,
-        'errors':             errors,
+        'titulo':              f'Editar pregunta #{pregunta.numero}',
+        'accion':              'Guardar cambios',
+        'tipos':               SAQ_TYPES,
+        'tipo_input_choices':  TIPO_INPUT_CHOICES,
+        'form':                form_data,
+        'pregunta':            pregunta,
+        'errors':              errors,
+        'opciones_existentes': pregunta.get_opciones(),  # precarga opciones en UI
     })
 
 
 @login_required
 @permission_required('saq.delete_preguntasaq', raise_exception=True)
 def saq_eliminar(request, pk):
-    """GET → confirmación. POST → elimina y redirige a lista."""
     pregunta = get_object_or_404(PreguntaSAQ, pk=pk)
-
     if request.method == 'POST':
         numero = pregunta.numero
         pregunta.delete()
         registrar_log(request, 'DELETE', 'SAQ', f'Pregunta #{numero} eliminada')
         return redirect('saq:saq_lista')
-
     return render(request, 'saq/saq_confirmar_eliminar.html', {'obj': pregunta})
 
-
-# ════════════════════════════════════════════════════════════════
-# PRETEST — LISTA
-# ════════════════════════════════════════════════════════════════
 
 @login_required
 def pretest_lista(request):
     qs = PreTest.objects.select_related('entidad', 'creado_por').order_by('-fecha_creacion')
-
     entidad_id = request.GET.get('entidad')
     if entidad_id:
         qs = qs.filter(entidad_id=entidad_id)
-
     paginator = Paginator(qs, 10)
     page_obj  = paginator.get_page(request.GET.get('page'))
-
     return render(request, 'saq/pretest_lista.html', {
         'page_obj':   page_obj,
         'entidades':  Entidad.objects.filter(is_active=True).order_by('nombre_empresa'),
@@ -278,48 +236,29 @@ def pretest_lista(request):
     })
 
 
-# ════════════════════════════════════════════════════════════════
-# PRETEST — NUEVO
-# ════════════════════════════════════════════════════════════════
-
 @login_required
 def pretest_nuevo(request):
     if request.method == 'POST':
-        # Validar que la entidad existe Y está activa
-        entidad = get_object_or_404(
-            Entidad,
-            pk=request.POST.get('entidad'),
-            is_active=True,          # solo entidades activas
-        )
+        entidad = get_object_or_404(Entidad, pk=request.POST.get('entidad'), is_active=True)
         pretest = PreTest.objects.create(entidad=entidad, creado_por=request.user)
-        registrar_log(request, 'CREATE', 'PRETEST',
-                      f'PreTest #{pretest.pk} para {entidad}')
+        registrar_log(request, 'CREATE', 'PRETEST', f'PreTest #{pretest.pk} para {entidad}')
         return redirect('saq:pretest_cuestionario', pretest.pk)
-
     return render(request, 'saq/pretest_nuevo.html', {
         'entidades': Entidad.objects.filter(is_active=True).order_by('nombre_empresa'),
     })
 
 
-# ════════════════════════════════════════════════════════════════
-# PRETEST — CUESTIONARIO
-# ════════════════════════════════════════════════════════════════
-
 @login_required
 def pretest_cuestionario(request, pk):
     pretest   = get_object_or_404(PreTest, pk=pk)
     preguntas = PreguntaSAQ.objects.filter(activo=True).order_by('numero')
-
     resp_raw  = pretest.respuestas.select_related('pregunta').all()
     resp_dict = {str(r.pregunta_id): r.respuesta_texto for r in resp_raw}
-
     paginator  = Paginator(preguntas, 10)
     num_pagina = int(request.GET.get('pagina', 1))
     page_obj   = paginator.get_page(num_pagina)
-
     total       = preguntas.count()
     respondidas = len(resp_dict)
-
     return render(request, 'saq/pretest_cuestionario.html', {
         'pretest':                   pretest,
         'page_obj':                  page_obj,
@@ -332,123 +271,77 @@ def pretest_cuestionario(request, pk):
     })
 
 
-# ════════════════════════════════════════════════════════════════
-# PRETEST — GUARDAR RESPUESTA (AJAX)
-# ════════════════════════════════════════════════════════════════
-
 @login_required
 @require_POST
 def pretest_guardar_respuesta(request, pk):
     pretest = get_object_or_404(PreTest, pk=pk)
-
-    # ── Parsear body JSON ────────────────────────────────────────
     try:
         data = json.loads(request.body)
     except json.JSONDecodeError:
         return JsonResponse({'error': 'El cuerpo de la petición no es JSON válido.'}, status=400)
-
     pregunta_id = data.get('pregunta_id')
     valor       = data.get('respuesta', '')
-
-    # ── Validar pregunta_id es entero positivo ───────────────────
     if not str(pregunta_id).isdigit():
         return JsonResponse({'error': 'pregunta_id debe ser un entero positivo.'}, status=400)
-
-    # ── Obtener pregunta activa (evita responder preguntas inactivas) ──
     pregunta = get_object_or_404(PreguntaSAQ, pk=pregunta_id, activo=True)
-
-    # ── Serializar listas (checkbox_multi) ───────────────────────
     if isinstance(valor, list):
         valor = json.dumps(valor)
-
-    # ── Validar longitud de respuesta de texto libre ─────────────
     if isinstance(valor, str) and len(valor) > MAX_CHARS_RESPUESTA:
         return JsonResponse(
             {'error': f'La respuesta no puede superar {MAX_CHARS_RESPUESTA} caracteres.'},
             status=400
         )
-
     RespuestaPreTest.objects.update_or_create(
-        pretest=pretest,
-        pregunta=pregunta,
+        pretest=pretest, pregunta=pregunta,
         defaults={'respuesta_texto': valor}
     )
-
     total       = PreguntaSAQ.objects.filter(activo=True).count()
     respondidas = pretest.respuestas.count()
-
     return JsonResponse({
-        'success':     True,
-        'total':       total,
-        'respondidas': respondidas,
-        'porcentaje':  round(respondidas / total * 100) if total else 0,
+        'success': True, 'total': total, 'respondidas': respondidas,
+        'porcentaje': round(respondidas / total * 100) if total else 0,
     })
 
-
-# ════════════════════════════════════════════════════════════════
-# PRETEST — ELIMINAR
-# ════════════════════════════════════════════════════════════════
 
 @login_required
 def pretest_eliminar(request, pk):
     pretest = get_object_or_404(PreTest, pk=pk)
-
     if request.method == 'POST':
         entidad = str(pretest.entidad)
         pretest.delete()
-        registrar_log(request, 'DELETE', 'PRETEST',
-                      f'PreTest #{pk} de {entidad} eliminado')
+        registrar_log(request, 'DELETE', 'PRETEST', f'PreTest #{pk} de {entidad} eliminado')
         return redirect('saq:pretest_lista')
-
     return render(request, 'saq/pretest_confirmar_eliminar.html', {'pretest': pretest})
 
-
-# ════════════════════════════════════════════════════════════════
-# PRETEST — RESULTADOS
-# ════════════════════════════════════════════════════════════════
 
 @login_required
 def pretest_resultados(request, pk):
     pretest = get_object_or_404(PreTest, pk=pk)
     conteos = pretest.calcular_resultado()
-
     total_preguntas   = PreguntaSAQ.objects.filter(activo=True).count()
     total_respondidas = pretest.respuestas.count()
-
     resultado_por_tipo = []
     for tipo in TIPOS_SAQ_ORDEN:
         c = conteos[tipo]
         resultado_por_tipo.append({
-            'tipo':           tipo,
-            'label':          dict(TipoSAQ.choices).get(tipo, tipo),
-            'total':          c['total'],
-            'si':             c['si'],
-            'no':             c['no'],
-            'na':             c['na'],
-            'no_probado':     c['no_probado'],
-            'pct':            c['pct'],
-            'elegible':       c['elegible'],
+            'tipo': tipo, 'label': dict(TipoSAQ.choices).get(tipo, tipo),
+            'total': c['total'], 'si': c['si'], 'no': c['no'],
+            'na': c['na'], 'no_probado': c['no_probado'],
+            'pct': c['pct'], 'elegible': c['elegible'],
             'es_recomendado': c['es_recomendado'],
         })
-
     respuestas_resumen = []
     for resp in pretest.respuestas.select_related('pregunta').order_by('pregunta__numero'):
         respuestas_resumen.append({
-            'numero':     resp.pregunta.numero,
-            'tipo_saq':   resp.pregunta.tipo_saq,
-            'seccion':    resp.pregunta.seccion_aoc,
-            'pregunta':   resp.pregunta.pregunta_es,
-            'respuesta':  resp.get_valor_display(),
-            'tipo_input': resp.pregunta.tipo_input,
+            'numero': resp.pregunta.numero, 'tipo_saq': resp.pregunta.tipo_saq,
+            'seccion': resp.pregunta.seccion_aoc, 'pregunta': resp.pregunta.pregunta_es,
+            'respuesta': resp.get_valor_display(), 'tipo_input': resp.pregunta.tipo_input,
         })
-
     return render(request, 'saq/pretest_resultados.html', {
-        'pretest':            pretest,
-        'resultado_por_tipo': resultado_por_tipo,
-        'saq_recomendado':    pretest.saq_recomendado,
-        'saq_info':           PreTest.get_saq_info_todos().get(pretest.saq_recomendado, ''),
-        'saq_info_todos':     PreTest.get_saq_info_todos(),
-        'total_preguntas':    total_preguntas,
-        'total_respondidas':  total_respondidas,
+        'pretest': pretest, 'resultado_por_tipo': resultado_por_tipo,
+        'saq_recomendado': pretest.saq_recomendado,
+        'saq_info': PreTest.get_saq_info_todos().get(pretest.saq_recomendado, ''),
+        'saq_info_todos': PreTest.get_saq_info_todos(),
+        'total_preguntas': total_preguntas, 'total_respondidas': total_respondidas,
         'respuestas_resumen': respuestas_resumen,
     })

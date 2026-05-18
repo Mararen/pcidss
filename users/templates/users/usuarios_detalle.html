@@ -1,45 +1,55 @@
 {% extends 'users/base.html' %}
 {% load static %}
-
 {% block title %}{{ usuario.username }} | Usuario{% endblock %}
-
 {% block content %}
 
 <div class="page-header">
     <div class="page-header-text">
-        <h1>{{ usuario.get_full_name|default:usuario.username }}</h1>
-        <p>Detalle del usuario y configuración de acceso.</p>
+        <h1>
+            {% if usuario == request.user %}
+                Mi perfil
+            {% else %}
+                {{ usuario.get_full_name|default:usuario.username }}
+            {% endif %}
+        </h1>
+        <p>
+            {% if usuario == request.user %}
+                Tu información personal y configuración de acceso.
+            {% else %}
+                Detalle del usuario y configuración de acceso.
+            {% endif %}
+        </p>
     </div>
-
     <div class="page-actions">
-        <a href="{% url 'usuarios_lista' %}" class="btn-secondary">↶ Volver</a>
+        {% if usuario == request.user %}
+            <a href="{% url 'dashboard' %}" class="btn-secondary">↶ Volver</a>
+        {% else %}
+            <a href="{% url 'usuarios_lista' %}" class="btn-secondary">↶ Volver</a>
+        {% endif %}
+        {% if usuario == request.user or perms.users.gestionar_usuarios %}
         <a href="{% url 'usuario_editar' usuario.pk %}" class="btn-primary">Editar</a>
+        {% endif %}
     </div>
 </div>
 
+<!-- ── Información general ── -->
 <div class="card">
-
     <div class="card-header">
         <h3>Información general</h3>
     </div>
-
     <div class="card-body">
-
         <div class="detail-row">
             <span class="label">Usuario</span>
             <span class="value">{{ usuario.username }}</span>
         </div>
-
         <div class="detail-row">
             <span class="label">Nombre completo</span>
             <span class="value">{{ usuario.get_full_name }}</span>
         </div>
-
         <div class="detail-row">
             <span class="label">Email</span>
             <span class="value">{{ usuario.email }}</span>
         </div>
-
         <div class="detail-row">
             <span class="label">Estado</span>
             <span class="value">
@@ -50,7 +60,6 @@
                 {% endif %}
             </span>
         </div>
-
         <div class="detail-row">
             <span class="label">Rol</span>
             <span class="value">
@@ -61,71 +70,57 @@
                 {% endif %}
             </span>
         </div>
-
     </div>
 </div>
 
-{% with entidad=usuario.entidad_set.first %}
-{% if entidad %}
+<!-- ── Información de auditoría ── -->
+{% if perms.users.ver_usuarios or request.user.is_superuser %}
 <div class="card" style="margin-top:20px;">
-
-    <div class="card-header">
-        <h3>Entidad asociada</h3>
-    </div>
-	
-	<div class="card" style="margin-top:20px;">
-
     <div class="card-header">
         <h3>Información de auditoría</h3>
     </div>
-
     <div class="card-body">
-
         <div class="detail-row">
             <span class="label">Fecha de creación</span>
-            <span class="value">
-                {{ usuario.date_joined|date:"Y-m-d H:i" }}
-            </span>
+            <span class="value">{{ usuario.date_joined|date:"Y-m-d H:i" }}</span>
         </div>
-
         <div class="detail-row">
             <span class="label">Última modificación</span>
-            <span class="value">
-                {{ usuario.ultima_modificacion|date:"Y-m-d H:i"|default:"Sin cambios" }}
-            </span>
+            <span class="value">{{ usuario.ultima_modificacion|date:"Y-m-d H:i"|default:"Sin cambios" }}</span>
         </div>
-
         <div class="detail-row">
             <span class="label">Último acceso</span>
-            <span class="value">
-                {{ usuario.last_login|date:"Y-m-d H:i"|default:"Nunca" }}
-            </span>
+            <span class="value">{{ usuario.last_login|date:"Y-m-d H:i"|default:"Nunca" }}</span>
         </div>
-
     </div>
 </div>
+{% endif %}
 
+<!-- ── Entidad asociada ── -->
+{% with entidad=usuario.entidad_set.first %}
+{% if entidad %}
+<div class="card" style="margin-top:20px;">
+    <div class="card-header">
+        <h3>Entidad asociada</h3>
+    </div>
     <div class="card-body">
-
         <div class="detail-row">
             <span class="label">Empresa</span>
             <span class="value">{{ entidad.nombre_empresa }}</span>
         </div>
-
         <div class="detail-row">
             <span class="label">Email</span>
             <span class="value">{{ entidad.email }}</span>
         </div>
-
         <div style="margin-top:15px;">
             <a href="{% url 'entidades_detalle' entidad.pk %}" class="btn-secondary">
                 Ver entidad →
             </a>
         </div>
-
     </div>
 </div>
 {% endif %}
 {% endwith %}
+
 
 {% endblock %}
